@@ -485,3 +485,14 @@ exports.createNews = (req, res) => {
     }
   }
 };
+
+exports.getNews = (req, res) => {
+  NewsReport.find()
+    .then((news) => {
+      res.send({
+        count: news.length,
+        msg: news,
+      });
+    })
+    .catch(() => res.status(500).send({ msg: "Something went wrong" }));
+};
