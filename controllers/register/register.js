@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const config = require("../../config/key");
 const School = require("../../models/school");
 const Staff = require("../../models/staff");
+const NewsReport = require("../../models/news");
 
 //REGISTER
 exports.getStudent = function (req, res) {
@@ -434,4 +435,30 @@ exports.registerStaff = (req, res) => {
   }
 };
 
-exports.createNews = (req, res) => {};
+exports.createNews = (req, res) => {
+  const { uploasderId, body, title, summary } = req.body;
+
+  if (
+    !uploasderId ||
+    !Array.prototype.isPrototypeOf(body) ||
+    body.length < 1 ||
+    !title ||
+    !summary
+  ) {
+    res.status(200).send({
+      msg: "Incomplete Info",
+    });
+  } else {
+    body.map((elem, n) => {
+      console.log(elem, "1111");
+      console.log(Object.keys(elem).includes("name"));
+    });
+    const newReport = new NewsReport({
+      uploasderId,
+      body,
+      title,
+      summary,
+    });
+    res.send(newReport);
+  }
+};

@@ -21,6 +21,7 @@ router.post("/forgotten_password", register.forgotten_password);
 router.post("/change_password/:token", register.changePassword);
 router.post("/registerSchool", register.registerSchool);
 router.post("/registerStaff", register.registerStaff);
+router.post("/createNews", register.createNews);
 //Result
 router.post("/result", auth, result.postResult);
 router.post("/check_result", auth, result.postGetResult);
