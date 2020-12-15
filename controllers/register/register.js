@@ -436,29 +436,52 @@ exports.registerStaff = (req, res) => {
 };
 
 exports.createNews = (req, res) => {
-  const { uploasderId, body, title, summary } = req.body;
+  const { uploaderId, body, title, summary } = req.body;
 
   if (
-    !uploasderId ||
+    !uploaderId ||
     !Array.prototype.isPrototypeOf(body) ||
     body.length < 1 ||
     !title ||
     !summary
   ) {
-    res.status(200).send({
+    res.status(400).send({
       msg: "Incomplete Info",
     });
   } else {
+    let wrongBody = [];
     body.map((elem, n) => {
-      console.log(elem, "1111");
-      console.log(Object.keys(elem).includes("name"));
+      //the length below was taken directly from the model
+      //if model is changed, endure to update
+      if (
+        Object.keys(elem).length < 2 ||
+        !Object.keys(elem).includes("text") ||
+        !Object.keys(elem).includes("quote")
+      ) {
+        wrongBody.push(n);
+      } else return;
     });
-    const newReport = new NewsReport({
-      uploasderId,
-      body,
-      title,
-      summary,
-    });
-    res.send(newReport);
+    if (wrongBody.length > 0) {
+      res.status(400).send({
+        msg: `Body with index ${wrongBody} not formatted correctly`,
+      });
+    } else {
+      const newReport = new NewsReport({
+        uploaderId,
+        body,
+        title,
+        summary,
+      });
+      newReport.save((err, news) => {
+        if (err) {
+          res.status(500).send({
+            msg: "Something went wrong",
+            err,
+          });
+        } else {
+          res.send({ news });
+        }
+      });
+    }
   }
 };

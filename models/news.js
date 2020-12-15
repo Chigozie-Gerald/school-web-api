@@ -4,16 +4,25 @@ const ObjectId = mongoose.Types.ObjectId;
 
 const newsModel = new Schema({
   title: { type: String, required: true },
-  uploaderId: { type: ObjectId, required: true },
+  // uploaderId: { type: ObjectId, required: true },
+  uploaderId: { type: String, required: true },
   body: [
     {
       quote: { type: Boolean, default: false },
-      quoteOwner: { type: String, default: "" },
+      quoteOwner: { type: String, default: "Anonymous" },
       text: { type: String, required: true },
     },
   ],
   summary: { type: String, required: true },
   title: { type: String, required: true },
+  comments: [
+    {
+      _id: false,
+      phone: { type: Number },
+      email: { type: String },
+      body: { type: String, required: true },
+    },
+  ],
 });
 
 // NewsReport because pluralizing 'News' would be weird
