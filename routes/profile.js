@@ -2,7 +2,6 @@ var express = require(`express`);
 var router = express.Router();
 
 var register = require("../controllers/register/register");
-var news = require("../controllers/news/news");
 var login = require("../controllers/register/login");
 var result = require("../controllers/staff/result");
 var assignment = require("../controllers/assignment/assignment");
@@ -22,13 +21,6 @@ router.post("/forgotten_password", register.forgotten_password);
 router.post("/change_password/:token", register.changePassword);
 router.post("/registerSchool", register.registerSchool);
 router.post("/registerStaff", register.registerStaff);
-//News
-router.post("/createNews", news.createNews);
-router.get("/getNews", news.getNews);
-router.post("/findNews", news.findNews);
-router.post("/editNews", news.editNews);
-router.post("/deleteAllNews", news.deleteAllNews);
-router.post("/deleteNews", news.deleteNews);
 //Result
 router.post("/result", auth, result.postResult);
 router.post("/check_result", auth, result.postGetResult);

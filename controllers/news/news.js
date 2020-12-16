@@ -58,6 +58,7 @@ exports.createNews = (req, res) => {
 
 exports.getNews = (req, res) => {
   NewsReport.find()
+    .sort({ createdAt: -1 })
     .then((news) => {
       res.send({
         count: news.length,

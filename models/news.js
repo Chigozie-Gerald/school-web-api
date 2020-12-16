@@ -23,6 +23,7 @@ const newsModel = new Schema({
       body: { type: String, required: true },
     },
   ],
+  createdAt: { type: String, default: Date.now },
 });
 
 // NewsReport because pluralizing 'News' would be weird

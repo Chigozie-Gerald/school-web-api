@@ -1,11 +1,18 @@
+const { default: validator } = require("validator");
 const Staff = require("../../models/staff");
 const Suggestion = require("../../models/suggestions");
 
 exports.createSuggestion = (req, res) => {
   const { email, body, category, phone, name } = req.body;
-  if (!body || !category) {
+  if (
+    !body ||
+    !category ||
+    !validator.isEmail(email) ||
+    typeof parseInt(phone) !== "number"
+  ) {
     res.status(400).send({
       msg: "Incomplete info",
+      phone: typeof phone,
     });
   } else {
     const newSuggestion = new Suggestion({
@@ -33,13 +40,23 @@ exports.createSuggestion = (req, res) => {
 exports.deleteSuggestion = (req, res) => {
   const { id, uploaderId } = req.body;
 
-  if (!id || !!uploaderId) {
+  if (!id || !uploaderId) {
     res.status(400).send({
       msg: "Incomplete info",
     });
   } else {
-    Suggestion.deleteOne({ _id: id })
-      .then(() => res.send({ msg: "Deletion successful" }))
+    Staff.findOne({ _id: uploaderId })
+      .then((staff) => {
+        if (staff && staff.editor) {
+          Suggestion.deleteOne({ _id: id })
+            .then(() => res.send({ msg: "Deletion successful" }))
+            .catch(() => res.status(500).send({ msg: "Something went wrong" }));
+        } else {
+          res.status(500).send({
+            msg: "Something went wrong",
+          });
+        }
+      })
       .catch(() => res.status(500).send({ msg: "Something went wrong" }));
   }
 };
@@ -49,23 +66,55 @@ exports.deleteAllSuggestions = (req, res) => {
   if (!id) {
     res.status(400).send({ msg: "Incomplete info" });
   } else {
+    Staff.findOne({ _id: id })
+      .then((staff) => {
+        if (staff && staff.editor) {
+          Suggestion.deleteMany()
+            .then(() => res.send({ msg: "All suggestions deleted" }))
+            .catch(() => res.status(500).send({ msg: "Something went wrong" }));
+        } else {
+          res.status(400).send({
+            msg: "Something went wrong",
+          });
+        }
+      })
+      .catch(() => res.status(500).send({ msg: "Something went wrong" }));
   }
-  Staff.findOne({ _id: id })
+};
+
+exports.replySuggestion = (req, res) => {
+  const { id, uploaderId } = req.body;
+
+  Staff.findOne({ _id: uploaderId })
     .then((staff) => {
-      if (staff && staff.editor) {
-        Suggestion.deleteMany()
-          .then(() => res.send({ msg: "All suggestions deleted" }))
+      if (staff.editor) {
+        Suggestion.findOne({ _id: id })
+          .then((sugg) => {
+            if (sugg) {
+              if (sugg.email) {
+                res.send({ msg: "Email to be replied here" });
+              } else if (sugg.phone) {
+                res.send({ msg: "Phone Number to be replied here" });
+              } else {
+                res.status(500).send({
+                  msg: "No details to reply",
+                });
+              }
+            } else {
+              res.status(500).send({
+                msg: "Something went wrong",
+              });
+            }
+          })
           .catch(() => res.status(500).send({ msg: "Something went wrong" }));
       } else {
-        res.status(400).send({
+        res.status(500).send({
           msg: "Something went wrong",
         });
       }
     })
     .catch(() => res.status(500).send({ msg: "Something went wrong" }));
 };
-
-exports.replySuggestion = (req, res) => {};
 
 exports.viewSuggestion = (req, res) => {
   const { id } = req.body;
@@ -92,6 +141,7 @@ exports.viewSuggestion = (req, res) => {
 
 exports.viewAllSuggestions = (req, res) => {
   Suggestion.find()
+    .sort({ createdAt: -1 })
     .then((suggs) => {
       if (suggs.length) {
         res.send({ msg: suggs });

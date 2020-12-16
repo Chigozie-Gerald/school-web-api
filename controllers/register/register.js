@@ -6,6 +6,7 @@ const config = require("../../config/key");
 const School = require("../../models/school");
 const Staff = require("../../models/staff");
 const NewsReport = require("../../models/news");
+const { default: validator } = require("validator");
 
 //REGISTER
 exports.getStudent = function (req, res) {
@@ -357,6 +358,7 @@ exports.registerStaff = (req, res) => {
     firstname,
     lastname,
     role,
+    editor,
     sex,
     lga,
     staff,
@@ -376,7 +378,7 @@ exports.registerStaff = (req, res) => {
     password,
   } = req.body;
 
-  if (!email || !firstname || !lastname) {
+  if (!email || !validator.isEmail(email) || !firstname || !lastname) {
     res.status(400).send({
       msg: "Incomplete Info",
     });
@@ -397,6 +399,7 @@ exports.registerStaff = (req, res) => {
             firstname,
             lastname,
             role,
+            editor,
             sex,
             lga,
             staff,
