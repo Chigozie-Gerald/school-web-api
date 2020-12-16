@@ -1,5 +1,6 @@
 var Student = require("../../models/student");
 var mongoose = require("mongoose");
+const Result = require("../../models/result");
 
 exports.postGetResult = function (req, res) {
   const { classResult, session, term, id } = req.body;
@@ -11,6 +12,9 @@ exports.postGetResult = function (req, res) {
           msg: "Couldn't get Student's result",
         });
       } else if (stud) {
+        // stud.classResult.map((elem, n)=>{
+        //   elem
+        // })
         if (stud.classResult.length > 0) {
           let i = 0;
           while (i < stud.classResult.length) {
@@ -234,4 +238,162 @@ exports.postResult = function (req, res) {
       res.status(400).send({ msg: "Something went wrong" });
       throw err;
     });
+};
+
+const resultSize = (result) => {
+  /*
+  The below checks if the size of the array is relatable to the tree 
+  (done in the first elem circle) 
+  */
+  let resultArg = false;
+  if (Array.prototype.isPrototypeOf(result) && result.length) {
+    if (
+      result[0].terms &&
+      result.splice(1, result[0].term).reduce((a, b) => a + b) +
+        result[0].term +
+        1 ===
+        result.length
+    ) {
+      resultArg = true;
+    } else {
+      resultArg = false;
+    }
+  } else {
+    return resultArg;
+  }
+};
+
+const ResultFormatter = (result) => {
+  /*
+  Ensure sanitized result is passed (i.e an actual array with size greater than zero)
+  */
+  let keepMap = true;
+  const errorArr = [];
+  result.map((elem, n) => {
+    if (!keepMap) {
+      if (n === 0 && !Object.prototype.isPrototypeOf(elem)) {
+        keepMap = false;
+        errorArr.push("Fatal: Incorrect header type");
+      } else {
+        if (n === 0) {
+          /*
+        The below ensures the integrity of the header object
+        */
+          if (
+            !Object.keys(elem).includes("terms") ||
+            !Object.keys(elem).includes("session") ||
+            !Object.keys(elem).includes("class") ||
+            (Object.keys(elem).includes("excluded") && elem.terms === 3) ||
+            (!Object.keys(elem).includes("excluded") && elem.terms !== 3)
+          ) {
+            keepMap = false;
+            errorArr.push("Bad Header keys");
+          }
+          //Below checks size
+          if (!resultSize(result) && keepMap) {
+            keepMap = false;
+            errorArr.push("Inconsistent size");
+          }
+        }
+        //Datatype check
+        if (n <= result[0].terms && n > 0) {
+          if (typeof elem !== "number") {
+            keepMap = false;
+            errorArr.push("Term datatype is bad");
+          }
+        }
+        if (n > result[0].terms) {
+          if (!Object.prototype.isPrototypeOf(elem)) {
+            keepMap = false;
+            errorArr.push("Subject datatype is bad");
+          } else {
+            // Check integrity of subject type
+            if (
+              !Object.keys(elem).includes("term") ||
+              !Object.keys(elem).includes("name") ||
+              !Object.keys(elem).includes("gradeDistribution") ||
+              !Object.keys(elem).includes("score") ||
+              !Object.keys(elem).includes("class")
+            ) {
+              keepMap = false;
+              errorArr.push("Subject Integrity is bad");
+            } else {
+              /*
+              Grade distribution and score are meant to have the same length 
+              of array
+              also, the grade distribution items are meant to resuce to 100
+              */
+              if (
+                !Array.prototype.isPrototypeOf(elem.gradeDistribution) ||
+                !Array.prototype.isPrototypeOf(elem.score)
+              ) {
+                keepMap = false;
+                errorArr.push(
+                  "Grade Distribution/score is meant to be an array"
+                );
+              } else {
+                // typeof here ensures numbers are given integrity check
+                if (
+                  elem.gradeDistribution.reduce((a, b) =>
+                    typeof b === "number" ? a + b : a + 0
+                  ) !== 100 ||
+                  elem.score.reduce((a, b) =>
+                    typeof b === "number" ? a + b : a + -10000
+                  ) > 100 ||
+                  elem.score.reduce((a, b) =>
+                    typeof b === "number" ? a + b : a + -10000
+                  ) < 0 ||
+                  elem.gradeDistribution.length !== elem.score.length
+                ) {
+                  keepMap = false;
+                  errorArr.push("Grade Distribution/score inconsistencies");
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+  return keepMap;
+};
+
+exports.newResult = (req, res) => {
+  const { studentId, result } = req.body;
+  if (!studentId || !Array.prototype.isPrototypeOf(result) || !result.length) {
+    res.status(500).send({ msg: "Incomplete info" });
+  } else {
+    /* Head contains (object)
+          the number of TERMS
+          the SESSION name
+          the CLASS of student
+          EXCLUDED TERM (if term is not 3)
+
+      Terms contains (number)
+          the number of SUBJECT
+
+      Subject contains (object)
+          TERM parent
+          the NAME of subject
+          GRADING type
+          GRADING distribution (array)
+          TEST score
+          EXAM score (will be called test2)
+    */
+
+    //Checker
+    console.log(ResultFormatter(result));
+
+    if (result[0]) {
+    } else {
+      Result.findOne({ studentId })
+        .then(() => {
+          const newResult = new Result({
+            studentId,
+            result,
+          });
+        })
+        .catch(() => res.status(500).send({ msg: "Something went wrong" }));
+    }
+  }
 };
