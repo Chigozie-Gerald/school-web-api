@@ -240,17 +240,32 @@ exports.postResult = function (req, res) {
     });
 };
 
+const getTermSub = (term, resultArr) => {
+  if (term <= resultArr[0].terms && term > 0) {
+    const top = resultArr[0].terms + 1;
+    const Start =
+      resultArr.slice(1, term).length > 0
+        ? resultArr.slice(1, term).reduce((a, b) => a + b) + top
+        : top;
+    const Stop = resultArr.slice(1, term + 1).reduce((a, b) => a + b) + top;
+    console.log(resultArr.slice(Start, Stop));
+  } else {
+    console.log("term no dey ");
+  }
+};
+
 const resultSize = (result) => {
   /*
   The below checks if the size of the array is relatable to the tree 
   (done in the first elem circle) 
   */
   let resultArg = false;
-  if (Array.prototype.isPrototypeOf(result) && result.length) {
+
+  if (Array.prototype.isPrototypeOf(result) && result.length > 0) {
     if (
       result[0].terms &&
-      result.splice(1, result[0].term).reduce((a, b) => a + b) +
-        result[0].term +
+      result.slice(1, result[0].terms + 1).reduce((a, b) => a + b) +
+        result[0].terms +
         1 ===
         result.length
     ) {
@@ -258,9 +273,8 @@ const resultSize = (result) => {
     } else {
       resultArg = false;
     }
-  } else {
-    return resultArg;
   }
+  return resultArg;
 };
 
 const ResultFormatter = (result) => {
@@ -268,9 +282,11 @@ const ResultFormatter = (result) => {
   Ensure sanitized result is passed (i.e an actual array with size greater than zero)
   */
   let keepMap = true;
-  const errorArr = [];
-  result.map((elem, n) => {
-    if (!keepMap) {
+  let errorArr = [];
+  let nnn = [];
+  const LEN = result.map((elem, n) => {
+    nnn.push(n);
+    if (keepMap) {
       if (n === 0 && !Object.prototype.isPrototypeOf(elem)) {
         keepMap = false;
         errorArr.push("Fatal: Incorrect header type");
@@ -283,7 +299,9 @@ const ResultFormatter = (result) => {
             !Object.keys(elem).includes("terms") ||
             !Object.keys(elem).includes("session") ||
             !Object.keys(elem).includes("class") ||
-            (Object.keys(elem).includes("excluded") && elem.terms === 3) ||
+            (Object.keys(elem).includes("excluded") &&
+              elem.excluded &&
+              elem.terms === 3) ||
             (!Object.keys(elem).includes("excluded") && elem.terms !== 3)
           ) {
             keepMap = false;
@@ -312,14 +330,13 @@ const ResultFormatter = (result) => {
               !Object.keys(elem).includes("term") ||
               !Object.keys(elem).includes("name") ||
               !Object.keys(elem).includes("gradeDistribution") ||
-              !Object.keys(elem).includes("score") ||
-              !Object.keys(elem).includes("class")
+              !Object.keys(elem).includes("score")
             ) {
               keepMap = false;
               errorArr.push("Subject Integrity is bad");
             } else {
               /*
-              Grade distribution and score are meant to have the same length 
+              Grade distribution and score are meant to have the same length
               of array
               also, the grade distribution items are meant to resuce to 100
               */
@@ -347,6 +364,15 @@ const ResultFormatter = (result) => {
                 ) {
                   keepMap = false;
                   errorArr.push("Grade Distribution/score inconsistencies");
+                } else {
+                  if (
+                    elem.gradeDistribution.filter(
+                      (enx, n) => enx < elem.score[n]
+                    ).length > 0
+                  ) {
+                    keepMap = false;
+                    errorArr.push("Score cannot be more than distribution");
+                  }
                 }
               }
             }
@@ -354,8 +380,9 @@ const ResultFormatter = (result) => {
         }
       }
     }
+    return n;
   });
-  return keepMap;
+  return [keepMap, errorArr];
 };
 
 exports.newResult = (req, res) => {
