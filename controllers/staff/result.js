@@ -1,5 +1,6 @@
 var Student = require("../../models/student");
 const Result = require("../../models/result");
+const ResultMaker = require("./resultClass");
 
 exports.postGetResult = function (req, res) {
   const { classResult, session, term, id } = req.body;
@@ -276,147 +277,20 @@ const resultSize = (result) => {
   return resultArg;
 };
 
-const ResultFormatter = (result) => {
-  /*
-  Ensure sanitized result is passed (i.e an actual array with size greater than zero)
-  */
-  //RULES
-  /* Head contains (object)
-          the number of TERMS
-          the SESSION name
-          the CLASS of student
-          EXCLUDED TERM (if term is not 3)
-
-      Terms contains (number)
-          the number of SUBJECT
-
-      Subject contains (object)
-          TERM parent
-          the NAME of subject
-          GRADING type
-          GRADING distribution (array)
-          TEST score
-          EXAM score (will be called test2)
-    */
-
-  let keepMap = true;
-  let errorArr = [];
-  let nnn = [];
-  result.map((elem, n) => {
-    nnn.push(n);
-    if (keepMap) {
-      if (n === 0 && !Object.prototype.isPrototypeOf(elem)) {
-        keepMap = false;
-        errorArr.push("Fatal: Incorrect header type");
-      } else {
-        if (n === 0) {
-          /*
-        The below ensures the integrity of the header object
-        */
-          if (
-            !Object.keys(elem).includes("terms") ||
-            !Object.keys(elem).includes("session") ||
-            !Object.keys(elem).includes("class") ||
-            (Object.keys(elem).includes("excluded") &&
-              elem.excluded &&
-              elem.terms === 3) ||
-            (!Object.keys(elem).includes("excluded") && elem.terms !== 3)
-          ) {
-            keepMap = false;
-            errorArr.push("Bad Header keys");
-          }
-          //Below checks size
-          if (!resultSize(result) && keepMap) {
-            keepMap = false;
-            errorArr.push("Inconsistent size");
-          }
-        }
-        //Datatype check
-        if (n <= result[0].terms && n > 0) {
-          if (typeof elem !== "number") {
-            keepMap = false;
-            errorArr.push("Term datatype is bad");
-          }
-        }
-        if (n > result[0].terms) {
-          if (!Object.prototype.isPrototypeOf(elem)) {
-            keepMap = false;
-            errorArr.push("Subject datatype is bad");
-          } else {
-            // Check integrity of subject type
-            if (
-              !Object.keys(elem).includes("term") ||
-              !Object.keys(elem).includes("name") ||
-              !Object.keys(elem).includes("gradeDistribution") ||
-              !Object.keys(elem).includes("score")
-            ) {
-              keepMap = false;
-              errorArr.push("Subject Integrity is bad");
-            } else {
-              /*
-              Grade distribution and score are meant to have the same length
-              of array
-              also, the grade distribution items are meant to resuce to 100
-              */
-              if (
-                !Array.prototype.isPrototypeOf(elem.gradeDistribution) ||
-                !Array.prototype.isPrototypeOf(elem.score)
-              ) {
-                keepMap = false;
-                errorArr.push(
-                  "Grade Distribution/score is meant to be an array"
-                );
-              } else {
-                // typeof here ensures numbers are given integrity check
-                if (
-                  elem.gradeDistribution.reduce((a, b) =>
-                    typeof b === "number" ? a + b : a + 0
-                  ) !== 100 ||
-                  elem.score.reduce((a, b) =>
-                    typeof b === "number" ? a + b : a + -10000
-                  ) > 100 ||
-                  elem.score.reduce((a, b) =>
-                    typeof b === "number" ? a + b : a + -10000
-                  ) < 0 ||
-                  elem.gradeDistribution.length !== elem.score.length
-                ) {
-                  keepMap = false;
-                  errorArr.push("Grade Distribution/score inconsistencies");
-                } else {
-                  if (
-                    elem.gradeDistribution.filter(
-                      (enx, n) => enx < elem.score[n]
-                    ).length > 0
-                  ) {
-                    keepMap = false;
-                    errorArr.push("Score cannot be more than distribution");
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    return n;
-  });
-  return [keepMap, errorArr];
-};
-
 exports.newResult = (req, res) => {
   const { studentId, result } = req.body;
   if (!studentId || !Array.prototype.isPrototypeOf(result) || !result.length) {
     res.status(500).send({ msg: "Incomplete info" });
   } else {
-    if (!ResultFormatter(result)[0] || ResultFormatter(result)[1].length > 0) {
-      res.status(400).send({
-        msg: "Result not formatted correctly",
-        details: ResultFormatter(result)[1],
-      });
-    } else {
+    try {
+      const new_result = new ResultMaker().components(result);
+      const resultCreate = new_result.result;
       Result.findOneAndUpdate(
         { studentId },
-        { $push: { result: result }, $set: { _id: studentId } },
+        {
+          $push: { result: resultCreate },
+          $set: { _id: studentId },
+        },
         { new: true, upsert: true, useFindAndModify: false }
       )
         .then((rst) => res.send({ rst }))
@@ -426,6 +300,8 @@ exports.newResult = (req, res) => {
             err,
           })
         );
+    } catch (err) {
+      res.status(500).send(...err);
     }
   }
 };
@@ -440,7 +316,20 @@ exports.deleteNewResult = (req, res) => {
     .then(() => res.send("All Results deleted"))
     .catch(() => res.status(500).send({ msg: "Something went wrong" }));
 };
-// editResult
+
+exports.editResult = (req, res) => {
+  const {} = req.body;
+  /*
+  Term (should be the most recent term)
+
+  //Should term be an object with finalized and num
+  //Or should finalized be ahndled by a general perspective?
+
+  update the number in term and insert
+  then use formatter to check before saving
+  */
+};
+
 // deleteResult
 //STOPPED AT SANITIZING THE RESULT INPUTS COMPLETELY
 //GET THE SUBJECTS IN A TERM

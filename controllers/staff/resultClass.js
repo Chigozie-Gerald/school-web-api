@@ -1,4 +1,4 @@
-class resultMaker {
+class ResultMaker {
   constructor(terms, className, session, subjects = []) {
     this.terms = [];
     this.head = [{ terms: 0, session: "", class: "", excluded: -3 }];
@@ -9,19 +9,19 @@ class resultMaker {
       return;
     } else {
       if (typeof terms !== "number") {
-        throw new Error("Invalid Term type in constructor");
+        throw "Invalid Term type in constructor";
       }
       if (typeof className !== "string") {
-        throw new Error("Invalid className type in constructor");
+        throw "Invalid className type in constructor";
       }
       if (typeof session !== "string") {
-        throw new Error("Invalid session type in constructor");
+        throw "Invalid session type in constructor";
       }
       if (!this.isArray(subjects)) {
-        throw new Error("Invalid subject type in constructor");
+        throw "Invalid subject type in constructor";
       }
       if (subjects.some((elem) => !this.isObject(elem))) {
-        throw new Error("Invalid subject items type in constructor");
+        throw "Invalid subject items type in constructor";
       }
 
       this.head = [
@@ -44,7 +44,7 @@ class resultMaker {
         !this.check()
       ) {
         this.result = false;
-        throw new Error("Subject size invalid");
+        throw "Subject size invalid";
       }
     }
   }
@@ -71,7 +71,7 @@ class resultMaker {
       this.head[0].terms === 3 ? false : this.head[0].terms - 3;
     this.result = this.head.concat(this.terms).concat(this.subjects);
     if (!this.check()) {
-      throw new Error("Result size inconsistent with inner variables");
+      throw "Result size inconsistent with inner variables";
     }
     return this.result;
   };
@@ -82,7 +82,7 @@ class resultMaker {
    */
   getSub = (term, name) => {
     if (typeof term !== "number" || typeof name !== "string") {
-      throw new Error("Invalid term or subject name type in Get sub");
+      throw "Invalid term or subject name type in Get sub";
     }
     const slice = this.getTermSub(term);
     let index = false;
@@ -104,7 +104,7 @@ class resultMaker {
    */
   getTermSub = (term) => {
     if (typeof term !== "number") {
-      throw new Error("Invalid term type in get term items");
+      throw "Invalid term type in get term items";
     }
     if (term <= this.terms.length && term > 0) {
       const Start = (this.terms.slice(0, term - 1).length > 0
@@ -117,9 +117,7 @@ class resultMaker {
       ).reduce((a, b) => a + b);
       return [Start, Stop, this.subjects.slice(Start, Stop)];
     } else {
-      throw new Error(
-        `Bad Term: ${term} is less than the length of the array --> [${this.terms}]`
-      );
+      throw `Bad Term: ${term} is less than the length of the array --> [${this.terms}]`;
     }
   };
   /* Add Subject
@@ -130,10 +128,10 @@ class resultMaker {
    */
   addSubject = (term, sub) => {
     if (!this.isObject(sub)) {
-      throw new Error("Subject type is bad in add Subject");
+      throw "Subject type is bad in add Subject";
     }
     if (!this.formatSubject(sub)[0] || this.formatSubject(sub)[1].length > 0) {
-      throw new Error(this.formatSubject(sub)[1]);
+      throw this.formatSubject(sub)[1];
     }
     sub["term"] = term;
     const slice = this.getTermSub(term);
@@ -162,7 +160,7 @@ class resultMaker {
    */
   deleteSubject = (term, name) => {
     if (typeof name !== "string") {
-      throw new Error("Subject name type is bad in delete Subject");
+      throw "Subject name type is bad in delete Subject";
     }
     const slice = this.getTermSub(term);
     const Start = slice[0];
@@ -347,7 +345,7 @@ class resultMaker {
    */
   session = (value) => {
     if (typeof value !== "string") {
-      throw new Error("Session type invalid in session change");
+      throw "Session type invalid in session change";
     }
     this.head[0].session = value;
     this.format();
@@ -358,7 +356,7 @@ class resultMaker {
    */
   class = (value) => {
     if (typeof value !== "string") {
-      throw new Error("Class type invalid in class change");
+      throw "Class type invalid in class change";
     }
     this.head[0].class = value;
     this.format();
@@ -371,7 +369,7 @@ class resultMaker {
    */
   addTerm = (sub = []) => {
     if (!this.isArray(sub)) {
-      throw new Error("Subject type invalid in 'Add term'");
+      throw "Subject type invalid in 'Add term'";
     }
     this.head[0].terms += 1;
     this.terms.push(0);
@@ -393,9 +391,7 @@ class resultMaker {
       }
     });
     if (sub.length > 0 && condition) {
-      throw new Error(
-        "There are problems with one or more of the subjects with your new term\n"
-      );
+      throw "There are problems with one or more of the subjects with your new term\n";
     }
     this.format();
   };
@@ -405,7 +401,7 @@ class resultMaker {
    */
   removeTerm = (term) => {
     if (typeof term !== "number") {
-      throw new Error("Term type invalid in Remove_term");
+      throw "Term type invalid in Remove_term";
     }
     const slice = this.getTermSub(term);
     this.subjects.splice(slice[0], slice[2].length);
@@ -436,9 +432,7 @@ class resultMaker {
       typeof name !== "string" ||
       (typeof score !== undefined && !this.isArray(score))
     ) {
-      throw new Error(
-        "Invalid term, distribution, score or subject name type in change distribution"
-      );
+      throw "Invalid term, distribution, score or subject name type in change distribution";
     }
 
     if (typeof this.getSub(term, name) === "number") {
@@ -449,12 +443,10 @@ class resultMaker {
       }
       const gradeCheck = this.checkGradeDist(this.subjects[index]);
       if (!gradeCheck[0] || gradeCheck[1].length > 0) {
-        throw new Error(
-          "Grade Distribution failed, ensure the score follows this distribution"
-        );
+        throw "Grade Distribution failed, ensure the score follows this distribution";
       }
     } else {
-      throw new Error("Subject doesn't exist in the term specified");
+      throw "Subject doesn't exist in the term specified";
     }
     this.format();
   };
@@ -468,23 +460,19 @@ class resultMaker {
       typeof name !== "string" ||
       typeof newName !== "string"
     ) {
-      throw new Error(
-        "Invalid term, old name or subject name type in change sub name"
-      );
+      throw "Invalid term, old name or subject name type in change sub name";
     }
 
     const index = this.getSub(term, name);
     const index2 = this.getSub(term, newName);
     if (typeof index === "number") {
       if (typeof index2 === "number") {
-        throw new Error(
-          "Subject already exists, update the already existing one or try another subject name"
-        );
+        throw "Subject already exists, update the already existing one or try another subject name";
       } else {
         this.subjects[index].name = newName;
       }
     } else {
-      throw new Error("Subject doesn't exist in the term specified");
+      throw "Subject doesn't exist in the term specified";
     }
     this.format();
   };
@@ -497,9 +485,9 @@ class resultMaker {
   components = (arr) => {
     const feedback = this.resultFormatter(arr);
     if (!feedback[0] || feedback[1].length > 0) {
-      throw new Error(feedback[1]);
+      throw feedback[1];
     } else if (this.result.length > 1) {
-      throw new Error("Override not allowed");
+      throw "Override not allowed";
     } else {
       this.head = [arr[0]];
       this.terms = Array(arr[0].terms).fill(0);
@@ -507,9 +495,7 @@ class resultMaker {
       for (let a = 0; a < arrSlice.length; a++) {
         const element = arrSlice[a];
         if (element.term > this.terms.length || element.term <= 0) {
-          throw new Error(
-            `Subject at index ${n + arr[0].terms + 1} has a bad term`
-          );
+          throw `Subject at index ${n + arr[0].terms + 1} has a bad term`;
         } else {
           this.terms[element.term - 1] += 1;
         }
@@ -533,3 +519,5 @@ class resultMaker {
     this.head[0].terms + this.subjects.length + this.head.length ===
     (this.result !== false ? this.result.length : [""].length);
 }
+
+module.exports = ResultMaker;
