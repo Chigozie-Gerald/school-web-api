@@ -23,6 +23,9 @@ router.post("/registerSchool", register.registerSchool);
 router.post("/registerStaff", register.registerStaff);
 //Result
 router.post("/result", auth, result.postResult);
+router.post("/new_result", auth, result.newResult);
+router.get("/get_new_result", auth, result.getNewResult);
+router.get("/delete_new_result", auth, result.deleteNewResult);
 router.post("/check_result", auth, result.postGetResult);
 //remember to be able to update and delete a result entry
 //Assignment

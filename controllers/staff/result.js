@@ -1,5 +1,4 @@
 var Student = require("../../models/student");
-var mongoose = require("mongoose");
 const Result = require("../../models/result");
 
 exports.postGetResult = function (req, res) {
@@ -281,10 +280,29 @@ const ResultFormatter = (result) => {
   /*
   Ensure sanitized result is passed (i.e an actual array with size greater than zero)
   */
+  //RULES
+  /* Head contains (object)
+          the number of TERMS
+          the SESSION name
+          the CLASS of student
+          EXCLUDED TERM (if term is not 3)
+
+      Terms contains (number)
+          the number of SUBJECT
+
+      Subject contains (object)
+          TERM parent
+          the NAME of subject
+          GRADING type
+          GRADING distribution (array)
+          TEST score
+          EXAM score (will be called test2)
+    */
+
   let keepMap = true;
   let errorArr = [];
   let nnn = [];
-  const LEN = result.map((elem, n) => {
+  result.map((elem, n) => {
     nnn.push(n);
     if (keepMap) {
       if (n === 0 && !Object.prototype.isPrototypeOf(elem)) {
@@ -390,41 +408,40 @@ exports.newResult = (req, res) => {
   if (!studentId || !Array.prototype.isPrototypeOf(result) || !result.length) {
     res.status(500).send({ msg: "Incomplete info" });
   } else {
-    /* Head contains (object)
-          the number of TERMS
-          the SESSION name
-          the CLASS of student
-          EXCLUDED TERM (if term is not 3)
-
-      Terms contains (number)
-          the number of SUBJECT
-
-      Subject contains (object)
-          TERM parent
-          the NAME of subject
-          GRADING type
-          GRADING distribution (array)
-          TEST score
-          EXAM score (will be called test2)
-    */
-
-    //Checker
-    console.log(ResultFormatter(result));
-
-    if (result[0]) {
+    if (!ResultFormatter(result)[0] || ResultFormatter(result)[1].length > 0) {
+      res.status(400).send({
+        msg: "Result not formatted correctly",
+        details: ResultFormatter(result)[1],
+      });
     } else {
-      Result.findOne({ studentId })
-        .then(() => {
-          const newResult = new Result({
-            studentId,
-            result,
-          });
-        })
-        .catch(() => res.status(500).send({ msg: "Something went wrong" }));
+      Result.findOneAndUpdate(
+        { studentId },
+        { $push: { result: result }, $set: { _id: studentId } },
+        { new: true, upsert: true, useFindAndModify: false }
+      )
+        .then((rst) => res.send({ rst }))
+        .catch((err) =>
+          res.status(500).send({
+            msg: "Something went wrong",
+            err,
+          })
+        );
     }
   }
 };
 
+exports.getNewResult = (req, res) => {
+  Result.find()
+    .then((results) => res.send(results))
+    .catch(() => res.status(500).send({ msg: "Something went wrong" }));
+};
+exports.deleteNewResult = (req, res) => {
+  Result.deleteMany()
+    .then(() => res.send("All Results deleted"))
+    .catch(() => res.status(500).send({ msg: "Something went wrong" }));
+};
+// editResult
+// deleteResult
 //STOPPED AT SANITIZING THE RESULT INPUTS COMPLETELY
 //GET THE SUBJECTS IN A TERM
 
