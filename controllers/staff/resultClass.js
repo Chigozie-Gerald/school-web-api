@@ -117,7 +117,7 @@ class ResultMaker {
       ).reduce((a, b) => a + b);
       return [Start, Stop, this.subjects.slice(Start, Stop)];
     } else {
-      throw `Bad Term: ${term} is less than the length of the array --> [${this.terms}]`;
+      throw `Bad Term: ${term} is less than 0 or more than the length of the array --> [${this.terms}]`;
     }
   };
   /* Add Subject
@@ -313,16 +313,24 @@ class ResultMaker {
       errorArr.push("Grade Distribution/score is meant to be an array ");
     } else {
       // typeof here ensures numbers are given integrity check
+      const gradeValue = elem.gradeDistribution.reduce((a, b) => {
+        if (Math.sign(a) < 0) {
+          keepMap = false;
+          errorArr.push(" Distribution values are not allowed to be negative");
+        }
+        return typeof b === "number" && b >= 0 ? a + b : a + 0;
+      });
+      const scoreValue = elem.score.reduce((a, b) => {
+        if (Math.sign(a) < 0) {
+          keepMap = false;
+          errorArr.push(" score values are not allowed to be negative");
+        }
+        return typeof b === "number" && b >= 0 ? a + b : a + -10000;
+      });
       if (
-        elem.gradeDistribution.reduce((a, b) =>
-          typeof b === "number" && b >= 0 ? a + b : a + 0
-        ) !== 100 ||
-        elem.score.reduce((a, b) =>
-          typeof b === "number" && b >= 0 ? a + b : a + -10000
-        ) > 100 ||
-        elem.score.reduce((a, b) =>
-          typeof b === "number" && b >= 0 ? a + b : a + -10000
-        ) < 0 ||
+        gradeValue !== 100 ||
+        scoreValue > 100 ||
+        scoreValue < 0 ||
         elem.gradeDistribution.length !== elem.score.length
       ) {
         keepMap = false;
@@ -435,8 +443,8 @@ class ResultMaker {
       throw "Invalid term, distribution, score or subject name type in change distribution";
     }
 
-    if (typeof this.getSub(term, name) === "number") {
-      const index = this.getSub(term, name);
+    const index = this.getSub(term, name);
+    if (typeof index === "number") {
       this.subjects[index].gradeDistribution = value;
       if (score) {
         this.subjects[index].score = score;
@@ -470,6 +478,42 @@ class ResultMaker {
         throw "Subject already exists, update the already existing one or try another subject name";
       } else {
         this.subjects[index].name = newName;
+      }
+    } else {
+      throw "Subject doesn't exist in the term specified";
+    }
+    this.format();
+  };
+  /* Change Subject Score
+        Changes the score of a subject for a specified term if allowed
+        RETURNS undefined / null
+  */
+  changeSubjectScore = (
+    term,
+    score,
+    name,
+    gradeDist = this.subjects[this.getSub(term, name)]
+      ? this.subjects[this.getSub(term, name)].gradeDistribution
+      : []
+  ) => {
+    if (
+      !this.isArray(score) ||
+      typeof term !== "number" ||
+      typeof name !== "string" ||
+      (typeof gradeDist !== undefined && !this.isArray(gradeDist))
+    ) {
+      throw "Invalid term, distribution, score or subject name type in change subject score";
+    }
+
+    const index = this.getSub(term, name);
+    if (typeof index === "number") {
+      this.subjects[index].score = score;
+      if (gradeDist) {
+        this.subjects[index].gradeDistribution = gradeDist;
+      }
+      const gradeCheck = this.checkGradeDist(this.subjects[index]);
+      if (!gradeCheck[0] || gradeCheck[1].length > 0) {
+        throw gradeCheck[1];
       }
     } else {
       throw "Subject doesn't exist in the term specified";
