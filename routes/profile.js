@@ -23,10 +23,13 @@ router.post("/registerSchool", register.registerSchool);
 router.post("/registerStaff", register.registerStaff);
 //Result
 router.post("/result", auth, result.postResult);
-router.post("/new_result", auth, result.newResult);
-router.get("/get_new_result", auth, result.getNewResult);
-router.get("/delete_new_result", auth, result.deleteNewResult);
 router.post("/check_result", auth, result.postGetResult);
+router.get("/get_all_new_result", auth, result.getAllNewResult);
+router.get("/get_new_result", auth, result.getNewResult);
+router.get("/delete_all_new_result", auth, result.deleteAllNewResult);
+router.get("/delete_last_new_result", auth, result.deleteLastNewResult);
+router.post("/new_result", auth, result.newResult);
+router.post("/edit_result_sub", auth, result.editResultSub);
 //remember to be able to update and delete a result entry
 //Assignment
 router.get("/assignment", assignment.assignment);

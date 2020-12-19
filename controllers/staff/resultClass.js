@@ -242,7 +242,7 @@ class ResultMaker {
           }
           //Datatype check
           if (n <= result[0].terms && n > 0) {
-            if (typeof elem !== "number" || Math.sign(elem) !== 1) {
+            if (typeof elem !== "number" || Math.sign(elem) < 0) {
               keepMap = false;
               errorArr.push("Term datatype  or value is bad");
             }

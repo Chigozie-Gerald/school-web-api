@@ -277,6 +277,53 @@ const resultSize = (result) => {
   return resultArg;
 };
 
+exports.getAllNewResult = (req, res) => {
+  Result.find()
+    .then((results) => res.send(results))
+    .catch(() => res.status(500).send({ msg: "Something went wrong" }));
+};
+
+exports.getNewResult = (req, res) => {
+  const { studentId } = req.body;
+  if (!studentId) {
+    res.status(500).send({
+      msg: "Incomplete Info",
+    });
+  } else {
+    Result.findOne({ studentId })
+      .then((results) => res.send(results))
+      .catch(() => res.status(500).send({ msg: "Something went wrong" }));
+  }
+};
+
+exports.deleteAllNewResult = (req, res) => {
+  Result.deleteMany()
+    .then(() => res.send("All Results deleted"))
+    .catch(() => res.status(500).send({ msg: "Something went wrong" }));
+};
+
+exports.deleteLastNewResult = (req, res) => {
+  const { studentId } = req.body;
+  if (!studentId) {
+    res.status(400).send({
+      msg: "Incomplete info",
+    });
+  } else {
+    Result.findOne({ studentId })
+      .then((port) => {
+        if (port.result.length > 0) {
+          port.result.pop();
+          res.send(port);
+        } else {
+          res.status(500).send({
+            msg: "No result available to delete",
+          });
+        }
+      })
+      .catch(() => res.status(500).send({ msg: "Something went wrong" }));
+  }
+};
+
 exports.newResult = (req, res) => {
   const { studentId, result } = req.body;
   if (!studentId || !Array.prototype.isPrototypeOf(result) || !result.length) {
@@ -301,24 +348,56 @@ exports.newResult = (req, res) => {
           })
         );
     } catch (err) {
-      res.status(500).send(...err);
+      res.status(500).send(err);
     }
   }
 };
 
-exports.getNewResult = (req, res) => {
-  Result.find()
-    .then((results) => res.send(results))
-    .catch(() => res.status(500).send({ msg: "Something went wrong" }));
-};
-exports.deleteNewResult = (req, res) => {
-  Result.deleteMany()
-    .then(() => res.send("All Results deleted"))
-    .catch(() => res.status(500).send({ msg: "Something went wrong" }));
-};
+exports.editResultSub = (req, res) => {
+  //Can only edit last session
+  //Maybe only the developer will be able to edit any result
+  const { term, score, name, studentId } = req.body;
+  if (!term || !name || !studentId || !Array.prototype.isPrototypeOf(score)) {
+    res.status(500).send({
+      msg: "Incomplete info",
+    });
+  } else {
+    try {
+      Result.findOne({ studentId })
+        .then((port) => {
+          if (port) {
+            const resultComponent = new ResultMaker();
+            resultComponent.components(port.result[port.result.length - 1]);
+            resultComponent.changeSubjectScore(term, score, name);
+            port.result[port.result.length - 1] = resultComponent.result;
+            console.log(port);
+            port.save((err, save) => {
+              if (err) {
+                res.status(500).send({
+                  msg: "Something went wrong",
+                });
+              } else {
+                res.send(port);
+              }
+            });
+          } else {
+            res.status(500).send({
+              msg: "Result doesn't exist",
+              err,
+            });
+          }
+        })
+        .catch((err) =>
+          res.status(500).send({
+            msg: "Something went wrong",
+            err,
+          })
+        );
+    } catch (err) {
+      res.status(500).send(err);
+    }
+  }
 
-exports.editResult = (req, res) => {
-  const {} = req.body;
   /*
   Term (should be the most recent term)
 
