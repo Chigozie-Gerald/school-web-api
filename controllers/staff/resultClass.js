@@ -154,7 +154,7 @@ class ResultMaker {
     return this.result;
   };
   /* Delete Subject
-        Deletes a subject at a given term if it exists
+        Deletes a subject from a given term if it exists
         Reduces the this.terms by the number of the terms deleted
         RETURNS this.result
    */
@@ -422,42 +422,6 @@ class ResultMaker {
 
     this.format();
   };
-  /* Grade Distribution
-        Changes grade ditribution for a given subject in a specified term
-        RETURNS undefined / null
-   */
-  gradeDistribution = (
-    term,
-    value,
-    name,
-    score = this.subjects[this.getSub(term, name)]
-      ? this.subjects[this.getSub(term, name)].score
-      : []
-  ) => {
-    if (
-      !this.isArray(value) ||
-      typeof term !== "number" ||
-      typeof name !== "string" ||
-      (typeof score !== undefined && !this.isArray(score))
-    ) {
-      throw "Invalid term, distribution, score or subject name type in change distribution";
-    }
-
-    const index = this.getSub(term, name);
-    if (typeof index === "number") {
-      this.subjects[index].gradeDistribution = value;
-      if (score) {
-        this.subjects[index].score = score;
-      }
-      const gradeCheck = this.checkGradeDist(this.subjects[index]);
-      if (!gradeCheck[0] || gradeCheck[1].length > 0) {
-        throw "Grade Distribution failed, ensure the score follows this distribution";
-      }
-    } else {
-      throw "Subject doesn't exist in the term specified";
-    }
-    this.format();
-  };
   /* Change Subject Name
         Changes the name of a subject for a specified term if allowed
         RETURNS undefined / null
@@ -484,33 +448,32 @@ class ResultMaker {
     }
     this.format();
   };
-  /* Change Subject Score
-        Changes the score of a subject for a specified term if allowed
+  /* Change Subject Score OR/AND Grade Distribution
+        Changes the score or/and grade distribution of a subject for a specified term if allowed
         RETURNS undefined / null
   */
-  changeSubjectScore = (
-    term,
-    score,
-    name,
-    gradeDist = this.subjects[this.getSub(term, name)]
-      ? this.subjects[this.getSub(term, name)].gradeDistribution
-      : []
-  ) => {
+  changeSubjectScore = (term, score, name, gradeDistribution) => {
     if (
-      !this.isArray(score) ||
+      // !this.isArray(score) ||
       typeof term !== "number" ||
-      typeof name !== "string" ||
-      (typeof gradeDist !== undefined && !this.isArray(gradeDist))
+      typeof name !== "string"
+      // !this.isArray(gradeDistribution)
     ) {
       throw "Invalid term, distribution, score or subject name type in change subject score";
     }
-
     const index = this.getSub(term, name);
+    score = score ? score : index ? this.subjects[index].score : [];
+    gradeDistribution = gradeDistribution
+      ? gradeDistribution
+      : index
+      ? this.subjects[index].gradeDistribution
+      : [];
+
+    console.log("score: ", score, "gradeDistribution: ", gradeDistribution);
+    console.log("index: ", index, "subjects: ", this.subjects[index]);
     if (typeof index === "number") {
       this.subjects[index].score = score;
-      if (gradeDist) {
-        this.subjects[index].gradeDistribution = gradeDist;
-      }
+      this.subjects[index].gradeDistribution = gradeDistribution;
       const gradeCheck = this.checkGradeDist(this.subjects[index]);
       if (!gradeCheck[0] || gradeCheck[1].length > 0) {
         throw gradeCheck[1];

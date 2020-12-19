@@ -1,6 +1,9 @@
 var Student = require("../../models/student");
 const Result = require("../../models/result");
 const ResultMaker = require("./resultClass");
+const result = require("../../models/result");
+
+const errorMsg = "Something went wrong";
 
 exports.postGetResult = function (req, res) {
   const { classResult, session, term, id } = req.body;
@@ -235,7 +238,7 @@ exports.postResult = function (req, res) {
         });
     })
     .catch((err) => {
-      res.status(400).send({ msg: "Something went wrong" });
+      res.status(400).send({ msg: errorMsg });
       throw err;
     });
 };
@@ -280,7 +283,7 @@ const resultSize = (result) => {
 exports.getAllNewResult = (req, res) => {
   Result.find()
     .then((results) => res.send(results))
-    .catch(() => res.status(500).send({ msg: "Something went wrong" }));
+    .catch(() => res.status(500).send({ msg: errorMsg }));
 };
 
 exports.getNewResult = (req, res) => {
@@ -292,14 +295,14 @@ exports.getNewResult = (req, res) => {
   } else {
     Result.findOne({ studentId })
       .then((results) => res.send(results))
-      .catch(() => res.status(500).send({ msg: "Something went wrong" }));
+      .catch(() => res.status(500).send({ msg: errorMsg }));
   }
 };
 
 exports.deleteAllNewResult = (req, res) => {
   Result.deleteMany()
     .then(() => res.send("All Results deleted"))
-    .catch(() => res.status(500).send({ msg: "Something went wrong" }));
+    .catch(() => res.status(500).send({ msg: errorMsg }));
 };
 
 exports.deleteLastNewResult = (req, res) => {
@@ -320,7 +323,7 @@ exports.deleteLastNewResult = (req, res) => {
           });
         }
       })
-      .catch(() => res.status(500).send({ msg: "Something went wrong" }));
+      .catch(() => res.status(500).send({ msg: errorMsg }));
   }
 };
 
@@ -343,7 +346,7 @@ exports.newResult = (req, res) => {
         .then((rst) => res.send({ rst }))
         .catch((err) =>
           res.status(500).send({
-            msg: "Something went wrong",
+            msg: errorMsg,
             err,
           })
         );
@@ -356,8 +359,8 @@ exports.newResult = (req, res) => {
 exports.editResultSub = (req, res) => {
   //Can only edit last session
   //Maybe only the developer will be able to edit any result
-  const { term, score, name, studentId } = req.body;
-  if (!term || !name || !studentId || !Array.prototype.isPrototypeOf(score)) {
+  const { term, score, name, studentId, gradeDistribution } = req.body;
+  if (!term || !name || !studentId) {
     res.status(500).send({
       msg: "Incomplete info",
     });
@@ -367,29 +370,36 @@ exports.editResultSub = (req, res) => {
         .then((port) => {
           if (port) {
             const resultComponent = new ResultMaker();
+            console.log(port.result[0]);
             resultComponent.components(port.result[port.result.length - 1]);
-            resultComponent.changeSubjectScore(term, score, name);
+            resultComponent.changeSubjectScore(
+              term,
+              score ? score : undefined,
+              name,
+              gradeDistribution ? gradeDistribution : undefined
+            );
             port.result[port.result.length - 1] = resultComponent.result;
-            console.log(port);
+            //Mark modified is compulsory to reflect updates
+            port.markModified("result");
+            // console.log(port.result);
             port.save((err, save) => {
               if (err) {
                 res.status(500).send({
-                  msg: "Something went wrong",
+                  msg: errorMsg,
                 });
               } else {
-                res.send(port);
+                res.send(save);
               }
             });
           } else {
             res.status(500).send({
               msg: "Result doesn't exist",
-              err,
             });
           }
         })
         .catch((err) =>
           res.status(500).send({
-            msg: "Something went wrong",
+            msg: errorMsg + err,
             err,
           })
         );
@@ -397,21 +407,44 @@ exports.editResultSub = (req, res) => {
       res.status(500).send(err);
     }
   }
-
-  /*
-  Term (should be the most recent term)
-
-  //Should term be an object with finalized and num
-  //Or should finalized be ahndled by a general perspective?
-
-  update the number in term and insert
-  then use formatter to check before saving
-  */
 };
 
-// deleteResult
-//STOPPED AT SANITIZING THE RESULT INPUTS COMPLETELY
-//GET THE SUBJECTS IN A TERM
+exports.addResultSub = (req, res) => {
+  const { term } = req.body;
+};
 
-//NEXT, GET THE TERM FOR A SUBJECT WITH AN INDEX
-//CHANGE THE MODEL FOR RESULT
+exports.removeResultSub = (req, res) => {
+  const { term } = req.body;
+};
+
+exports.getTermResult = (req, res) => {
+  //Gets Last Result Update later
+  const { term, studentId } = req.body;
+  if (!term || !studentId) {
+    res.status(400).send({
+      msg: "Incomplete Info",
+    });
+  } else {
+    Result.findOne({ _id: studentId, result: { $ne: [] } })
+      .then((port) => {
+        if (port) {
+          const resultComponent = new ResultMaker();
+          resultComponent.components(port.result[port.result.length - 1]);
+          const termResult = resultComponent.getTermSub(term);
+          res.send(termResult[2]);
+        } else {
+          res.status(500).send({ msg: errorMsg });
+        }
+      })
+      .catch((err) => res.status(500).send(err));
+  }
+};
+/*
+Result to be able to finalize an exam so as to restrict unwanted popping and edits
+one after the other
+*/
+
+//Add subject
+//Remove Subject
+//Get Term Result
+//

@@ -22,14 +22,16 @@ router.post("/change_password/:token", register.changePassword);
 router.post("/registerSchool", register.registerSchool);
 router.post("/registerStaff", register.registerStaff);
 //Result
-router.post("/result", auth, result.postResult);
-router.post("/check_result", auth, result.postGetResult);
-router.get("/get_all_new_result", auth, result.getAllNewResult);
-router.get("/get_new_result", auth, result.getNewResult);
-router.get("/delete_all_new_result", auth, result.deleteAllNewResult);
-router.get("/delete_last_new_result", auth, result.deleteLastNewResult);
-router.post("/new_result", auth, result.newResult);
-router.post("/edit_result_sub", auth, result.editResultSub);
+//add middleware later
+router.post("/result", result.postResult);
+router.post("/check_result", result.postGetResult);
+router.get("/get_all_new_result", result.getAllNewResult);
+router.post("/get_new_result", result.getNewResult);
+router.get("/delete_all_new_result", result.deleteAllNewResult);
+router.post("/delete_last_new_result", result.deleteLastNewResult);
+router.post("/new_result", result.newResult);
+router.post("/edit_result_sub", result.editResultSub);
+router.post("/get_term_result", result.getTermResult);
 //remember to be able to update and delete a result entry
 //Assignment
 router.get("/assignment", assignment.assignment);

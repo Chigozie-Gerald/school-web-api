@@ -18,6 +18,7 @@ app.listen(
   mongoose
     .connect("mongodb://127.0.0.1/testing", {
       useNewUrlParser: true,
+      useCreateIndex: true,
       useUnifiedTopology: true,
     })
     .then(() => {
