@@ -9,6 +9,7 @@ var listOfBook = require("../controllers/listOfBooks/listOfBook");
 var fee = require("../controllers/payments/fee");
 
 const auth = require("../middleware/auth");
+const admin = require("../middleware/admin");
 
 //Routes
 //Login & Register
@@ -25,14 +26,22 @@ router.post("/registerStaff", register.registerStaff);
 //add middleware later
 router.post("/result", result.postResult);
 router.post("/check_result", result.postGetResult);
-router.get("/get_all_new_result", result.getAllNewResult);
+//admin
+router.post("/get_all_new_result", admin, result.getAllNewResult);
 router.post("/get_new_result", result.getNewResult);
-router.get("/delete_all_new_result", result.deleteAllNewResult);
+//admin
+router.get("/delete_all_new_result", admin, result.deleteAllNewResult);
 router.post("/delete_last_new_result", result.deleteLastNewResult);
 router.post("/new_result", result.newResult);
 router.post("/edit_result_sub", result.editResultSub);
+router.post("/add_result_subject", result.addResultSub);
+router.post("/remove_result_subject", result.removeResultSub);
 router.post("/get_term_result", result.getTermResult);
-//remember to be able to update and delete a result entry
+
+//adminfor all 3
+router.post("/edit_result_sub_admin", admin, result.editResultSub);
+router.post("/add_result_subject_admin", admin, result.addResultSub);
+router.post("/remove_result_subject_admin", admin, result.removeResultSub);
 //Assignment
 router.get("/assignment", assignment.assignment);
 router.post("/post_assignment", auth, assignment.postAssignment);

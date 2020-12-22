@@ -10,17 +10,16 @@ function auth(req, res, next) {
     jwt.verify(token, config.jwtSecret, (err, authData) => {
       if (err) {
         res.status(400).json({
-          msg: "Invalid Token"
+          msg: "Invalid Token",
         });
-      }
-      if (authData) {
+      } else if (authData) {
         req.user = authData;
         next();
       }
     });
   } else {
     res.status(401).send({
-      msg: "No Token, Authorization failed"
+      msg: "No Token, Authorization failed",
     });
   }
 }

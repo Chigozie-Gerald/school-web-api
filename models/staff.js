@@ -15,7 +15,7 @@ const STAFFMODEL = new Schema({
   ],
   sex: { type: String, required: true },
   lga: { type: String, trim: true },
-  staff: { type: Boolean, required: true, trim: true, default: false },
+  teacher: { type: Boolean, required: true, trim: true, default: true },
   editor: { type: Boolean, required: true, trim: true, default: false },
   address: { type: String, required: true, trim: true },
   middlename: { type: String, trim: true, default: "" },

@@ -130,10 +130,10 @@ class ResultMaker {
     if (!this.isObject(sub)) {
       throw "Subject type is bad in add Subject";
     }
+    sub["term"] = term;
     if (!this.formatSubject(sub)[0] || this.formatSubject(sub)[1].length > 0) {
       throw this.formatSubject(sub)[1];
     }
-    sub["term"] = term;
     const slice = this.getTermSub(term);
     const Start = slice[0];
     const Arr = slice[2];
@@ -166,8 +166,12 @@ class ResultMaker {
     const Start = slice[0];
     const Arr = slice[2];
     const newArr = Arr.filter((elem) => elem.name !== name);
-    this.subjects.splice(Start, Arr.length, ...newArr);
-    this.terms[term - 1] = newArr.length;
+    if (newArr.length === Arr.length) {
+      throw "Subject wasn't found and so, nothing was deleted";
+    } else {
+      this.subjects.splice(Start, Arr.length, ...newArr);
+      this.terms[term - 1] = newArr.length;
+    }
     this.format();
     return this.result;
   };
@@ -462,15 +466,17 @@ class ResultMaker {
       throw "Invalid term, distribution, score or subject name type in change subject score";
     }
     const index = this.getSub(term, name);
-    score = score ? score : index ? this.subjects[index].score : [];
+    score = score
+      ? score
+      : typeof index === "number"
+      ? this.subjects[index].score
+      : [];
     gradeDistribution = gradeDistribution
       ? gradeDistribution
-      : index
+      : typeof index === "number"
       ? this.subjects[index].gradeDistribution
       : [];
 
-    console.log("score: ", score, "gradeDistribution: ", gradeDistribution);
-    console.log("index: ", index, "subjects: ", this.subjects[index]);
     if (typeof index === "number") {
       this.subjects[index].score = score;
       this.subjects[index].gradeDistribution = gradeDistribution;
