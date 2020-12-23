@@ -1,12 +1,49 @@
 const Type = require("../models/Types");
 
+//For session and class
+exports.objCheck = (value, arr, session = false, term) => {
+  if (arr.length > 0) {
+    let sesId = false;
+    arr.filter((a) => {
+      if (a.title === value) {
+        sesId = a._id;
+        if (session && term) {
+          if (term > a.term || term < 0) {
+            sesId = false;
+          }
+        }
+
+        return a.title === value;
+      }
+    });
+    return sesId;
+  } else {
+    return false;
+  }
+};
+//For currency and Fee
+exports.check = (value, arr) => {
+  if ((arr, length > 0)) {
+    let checked = false;
+    arr.filter((a) => {
+      if (a === value) {
+        checked = a._id;
+        return a === value;
+      }
+    });
+    return checked;
+  } else {
+    return false;
+  }
+};
+
 exports.isClass = (value) => {
-  Type.findOne({ "class.name": value })
+  Type.findOne()
     .then((result) => {
       if (result) {
-        return true;
+        return this.objCheck(value, result.className);
       } else {
-        throw "Class is invalid";
+        throw "Create a 'Type' before executing this action";
       }
     })
     .catch((err) => {
@@ -15,12 +52,12 @@ exports.isClass = (value) => {
 };
 
 exports.isSession = (value) => {
-  Type.findOne({ "session.title": value })
+  Type.findOne()
     .then((result) => {
       if (result) {
-        return true;
+        return this.objCheck(value, result.session, true);
       } else {
-        throw "Session is invalid";
+        throw "Create a 'Type' before executing this action";
       }
     })
     .catch((err) => {
@@ -29,12 +66,12 @@ exports.isSession = (value) => {
 };
 
 exports.isFee = (value) => {
-  Type.findOne({ fees: value })
+  Type.findOne()
     .then((result) => {
       if (result) {
-        return true;
+        return this.check(value, result.fee);
       } else {
-        throw "Fee is invalid";
+        throw "Create a 'Type' before executing this action";
       }
     })
     .catch((err) => {
@@ -42,12 +79,12 @@ exports.isFee = (value) => {
     });
 };
 exports.isTerm = (session, term) => {
-  Type.findOne({ "session.title": session, "session.title": { $lte: term } })
+  Type.findOne()
     .then((result) => {
       if (result) {
-        return true;
+        return this.objCheck(session, result.session, true, term);
       } else {
-        throw "Session is invalid";
+        throw "Create a 'Type' before executing this action";
       }
     })
     .catch((err) => {

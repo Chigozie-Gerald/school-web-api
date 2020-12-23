@@ -1,7 +1,7 @@
 class ResultMaker {
   constructor(terms, className, session, subjects = []) {
     this.terms = [];
-    this.head = [{ terms: 0, session: "", class: "", excluded: -3 }];
+    this.head = [{ terms: 0, session: "", className: "", excluded: -3 }];
     this.subjects = [];
     this.result = false;
     this.format();
@@ -28,7 +28,7 @@ class ResultMaker {
         {
           terms,
           session: session,
-          class: className,
+          className,
           excluded: terms === 3 ? false : terms - 3,
         },
       ];
@@ -227,7 +227,7 @@ class ResultMaker {
             if (
               !Object.keys(elem).includes("terms") ||
               !Object.keys(elem).includes("session") ||
-              !Object.keys(elem).includes("class") ||
+              !Object.keys(elem).includes("className") ||
               (Object.keys(elem).includes("terms") &&
                 Math.sign(elem.terms) !== 1) ||
               (Object.keys(elem).includes("excluded") &&
@@ -366,11 +366,11 @@ class ResultMaker {
         Changes the value of class in head
         RETURNS undefined / null
    */
-  class = (value) => {
+  className = (value) => {
     if (typeof value !== "string") {
       throw "Class type invalid in class change";
     }
-    this.head[0].class = value;
+    this.head[0].className = value;
     this.format();
   };
   /* Add Term

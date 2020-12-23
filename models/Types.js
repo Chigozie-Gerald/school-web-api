@@ -4,7 +4,7 @@ const Schema = mongoose.Schema;
 
 const typesSchema = new Schema(
   {
-    fees: [
+    fee: [
       {
         type: String,
         required: true,
@@ -13,10 +13,19 @@ const typesSchema = new Schema(
         default: "School Fees",
       },
     ],
-    //May give class seperate model
-    class: [
+    currency: [
       {
-        name: { type: String, unique: true, required: true },
+        type: String,
+        required: true,
+        trim: true,
+        unique: true,
+        default: "naira",
+      },
+    ],
+    //May give class seperate model
+    className: [
+      {
+        title: { type: String, unique: true, required: true },
         senior: { type: Boolean, required: true },
         createdAt: { type: Number, default: Date.now, required: true },
       },
@@ -32,29 +41,6 @@ const typesSchema = new Schema(
   },
   virtuals
 );
-
-typesSchema.pre("update", function (next) {
-  /*
-  If a session is added or made active, the other recent fields 
-  are turned inactive
-  Delicate position
-  */
-  if (this.session.isModified("session")) {
-    const session = this.session.sort((a, b) => b.createdAt - a.createdAt);
-    this.session.forEach((element) =>
-      session[0] === element._id
-        ? (element.active = false)
-        : (element.active = true)
-    );
-    this.session.save((err, saved) => {
-      if (err) {
-        throw err;
-      } else {
-        next();
-      }
-    });
-  }
-});
 
 typesSchema.pre("validate", function (next) {
   /*

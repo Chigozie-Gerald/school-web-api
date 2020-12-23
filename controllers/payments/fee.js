@@ -1,22 +1,42 @@
 const Fee = require("../../models/fee");
 const Type = require("../../models/Types");
+const Checker = require("../staff/resultClass");
 
 exports.postFee = function (req, res) {
-  const { className, category, feesTitle, sub, currency, session } = req.body;
+  const {
+    name,
+    className,
+    staffId,
+    compulsory,
+    online,
+    term,
+    allClasses,
+    subFees,
+    currency,
+    session,
+  } = req.body;
 
-  if (!className || !feesTitle || !sub || !session || !currency) {
+  if (
+    !staffId ||
+    (!allClasses && !new Checker().isArray(className)) ||
+    !new Checker().isArray(!subFees) ||
+    !session
+  ) {
     res.status(400).send({
       msg: "Please fill in the required fields",
     });
   } else {
     var fee = new Fee({
+      name,
       className,
-      category,
-      currency,
-      feesTitle,
+      staffId,
+      compulsory,
+      online: typeof online !== "boolean" ? online : false,
+      allClasses: typeof allClasses === "boolean" ? allClasses : false,
+      term: term ? term : 3,
       session,
-      subFees: sub,
-      total,
+      currency: currency ? currency : "naira",
+      subFees,
     });
 
     fee.save((err, new_fee) => {
@@ -24,7 +44,6 @@ exports.postFee = function (req, res) {
         res.status(500).send({
           msg: "Something went wrong",
         });
-        // throw err;
       } else if (new_fee) {
         res.send(new_fee);
       }
@@ -33,15 +52,19 @@ exports.postFee = function (req, res) {
 };
 
 exports.deleteFee = (req, res) => {
-  const { _id, adminId } = req.body;
+  /*Can only delete for an active session
+   */
+  const { _id, staffId } = req.body;
 
-  Fee.deleteOne({
-    _id,
-    adminId,
-  })
+  Fee.updateOne(
+    {
+      _id,
+      staffId,
+    },
+    { isDeleted: true }
+  )
     .then((n) => {
-      console.log(n);
-      res.send("Operation done");
+      res.send("Operation done (Silent delete)");
     })
     .catch((err) => {
       res.status(500).send({
@@ -52,6 +75,9 @@ exports.deleteFee = (req, res) => {
 };
 
 exports.getFee = (req, res) => {
+  /*
+  NAME | CLASS | 
+   */
   const { className, category, session } = req.body;
 
   if (!className || !session) {
@@ -84,7 +110,7 @@ exports.getFee = (req, res) => {
 };
 
 exports.fee = function (req, res) {
-  Fee.find({})
+  Fee.find()
     .sort({ className: 1 })
     .then((fee) => {
       res.send(fee);
@@ -98,45 +124,57 @@ exports.fee = function (req, res) {
 };
 
 exports.updateFee = function (req, res) {
-  const { _id, sub } = req.body;
+  const {
+    id,
+    staffId,
+    name,
+    className,
+    allClasses,
+    compulsory,
+    online,
+    term,
+    session,
+    currency,
+    subFees,
+  } = req.body;
 
-  if (!_id || !sub) {
-    res.status(400).send({
-      msg: "Please fill in the required fields",
-    });
-  } else {
-    let total = 0;
-    for (let i = 0; i < sub.length; i++) {
-      let amt = sub[i]["subAmount"];
-      let amount = parseFloat(amt);
-      total = total + amount;
-    }
-    Fee.updateOne({ _id }, { total, subFess: sub })
-      .then((f) => {
-        Fee.find({ _id })
-          .then((fee) => {
-            if (fee) {
-              res.send(fee);
-            } else {
-              res.status(500).send({
-                msg: "Something went wrong",
-              });
-            }
-          })
-          .catch((err) => {
+  Fee.findOne({ _id: id, staffId, isDeleted: false })
+    .then((fee) => {
+      Fee.updateOne(
+        { _id: id, staffId },
+        {
+          name: name ? name : fee.name,
+          className: className ? className : fee.className,
+          allClasses:
+            typeof allClasses === "boolean" ? allClasses : fee.allClasses,
+          compulsory:
+            typeof allClasses === "boolean" ? compulsory : fee.compulsory,
+          online: typeof allClasses === "boolean" ? online : fee.online,
+          term: typeof term === "number" ? term : fee.term,
+          session: session ? session : fee.session,
+          currency: currency ? currency : fee.currency,
+          subFees: subFees ? subFees : fee.subFees,
+        }
+      )
+        .then((update) => {
+          if (update) {
+            res.send(update);
+          } else {
             res.status(500).send({
               msg: "Something went wrong",
             });
-            throw err;
-          });
-      })
-      .catch((err) => {
-        res.status(500).send({
-          msg: "Something went wrong",
-        });
-        throw err;
+          }
+        })
+        .catch((err) =>
+          res.status(500).send({ err, msg: "Something went wrong" })
+        );
+    })
+    .catch((err) => {
+      res.status(500).send({
+        msg: "Something went wrong",
       });
-  }
+      throw err;
+    });
 };
 
 /*
@@ -145,7 +183,7 @@ TERM THAT HASN'T STARTED OR A CURRENT TERM
 -------------------------------------------
 Group Fees/ Aggrregate Fees
 
-Post Fees
+Post Fees (**DONE)
   School Fees
   PTA
   Uniform
@@ -163,18 +201,26 @@ Get Fees
   For a session
   For a length of time
   For everytime
+  Admin get
+  Staff get?
 
 Edit Fees
+what kind of fees can I update?
+ans: the ones no one has paid anything 
+i.e when the student array is empty
+if someone has paid, an email will be sent telling the person the situation
+and to get refund from the school
+
   Whole Fees
   Details
-    Name | Amount (May only be able to update subFees if available) | Division of payment | term | Session | Others |
+    Name | Amount (May only be able to update subFees if available) | Sub Fees | term | Session | Others |
     Payment Types | Constraints (eg. Only for SS3)
 
 Delete Fees
   Whole Fees
   Details
-    Name | Amount | Division of payment | term | Session | Others |
-    Payment Types
+    Name | Sub Fees | term | Session | Others |
+    Payment Types (master card)
 
 
 History
