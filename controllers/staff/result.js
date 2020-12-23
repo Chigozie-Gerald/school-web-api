@@ -392,9 +392,6 @@ exports.addResultSub = (req, res) => {
   //Add subject to the last session in the last term
   const { term, subject, studentId } = req.body;
   const resultComponent = new ResultMaker();
-  console.log(!term && req.isAdmin, term, req.isAdmin);
-  console.log(!studentId);
-  console.log(!resultComponent.isObject(subject));
   if (
     (!term && req.isAdmin) ||
     !studentId ||
@@ -489,5 +486,3 @@ exports.getTermResult = (req, res) => {
 Result to be able to finalize an exam so as to restrict unwanted popping and edits
 one after the other
 */
-
-//Add subject Admin

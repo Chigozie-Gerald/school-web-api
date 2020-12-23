@@ -17,6 +17,7 @@ const STAFFMODEL = new Schema({
   lga: { type: String, trim: true },
   teacher: { type: Boolean, required: true, trim: true, default: true },
   editor: { type: Boolean, required: true, trim: true, default: false },
+  admin: { type: Boolean, required: true, trim: true, default: false },
   address: { type: String, required: true, trim: true },
   middlename: { type: String, trim: true, default: "" },
   qualifications: [
@@ -78,4 +79,9 @@ const STAFFMODEL = new Schema({
   password: { type: String, required: true },
 });
 
+STAFFMODEL.post("validate", function () {
+  //Make document having editor to be true to be an admin automatically
+});
 module.exports = mongoose.model("Staff", STAFFMODEL);
+
+//Added Admin key-value pair

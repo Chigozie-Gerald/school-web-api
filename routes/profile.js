@@ -38,7 +38,7 @@ router.post("/add_result_subject", result.addResultSub);
 router.post("/remove_result_subject", result.removeResultSub);
 router.post("/get_term_result", result.getTermResult);
 
-//adminfor all 3
+//admin for all 3
 router.post("/edit_result_sub_admin", admin, result.editResultSub);
 router.post("/add_result_subject_admin", admin, result.addResultSub);
 router.post("/remove_result_subject_admin", admin, result.removeResultSub);

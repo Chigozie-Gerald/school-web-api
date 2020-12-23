@@ -1,5 +1,5 @@
-var Fee = require("../../models/fee");
-var mongoose = require("mongoose");
+const Fee = require("../../models/fee");
+const Type = require("../../models/Types");
 
 exports.postFee = function (req, res) {
   const { className, category, feesTitle, sub, currency, session } = req.body;
@@ -9,13 +9,6 @@ exports.postFee = function (req, res) {
       msg: "Please fill in the required fields",
     });
   } else {
-    var total = 0;
-    for (let i = 0; i < sub.length; i++) {
-      let amt = sub[i]["subAmount"];
-      let amount = parseFloat(amt, 10);
-      total += amount;
-    }
-
     var fee = new Fee({
       className,
       category,
@@ -39,30 +32,16 @@ exports.postFee = function (req, res) {
   }
 };
 
-exports.deleteFee = function (req, res) {
-  const { _id } = req.body;
+exports.deleteFee = (req, res) => {
+  const { _id, adminId } = req.body;
 
   Fee.deleteOne({
     _id,
+    adminId,
   })
-    .then((f) => {
-      Fee.find()
-        .sort({ createdAt: -1 })
-        .then((e_fee) => {
-          if (e_fee.length > 0) {
-            res.send(e_fee);
-          } else {
-            res.status(400).send({
-              msg: "No Fees yet",
-            });
-          }
-        })
-        .catch((err) => {
-          res.status(500).send({
-            msg: "Something went wrong",
-          });
-          throw err;
-        });
+    .then((n) => {
+      console.log(n);
+      res.send("Operation done");
     })
     .catch((err) => {
       res.status(500).send({
@@ -72,7 +51,7 @@ exports.deleteFee = function (req, res) {
     });
 };
 
-exports.getFee = function (req, res) {
+exports.getFee = (req, res) => {
   const { className, category, session } = req.body;
 
   if (!className || !session) {
@@ -159,3 +138,91 @@ exports.updateFee = function (req, res) {
       });
   }
 };
+
+/*
+TERM MANIPULATIONS CAN ONLY BE DONE IN A 
+TERM THAT HASN'T STARTED OR A CURRENT TERM
+-------------------------------------------
+Group Fees/ Aggrregate Fees
+
+Post Fees
+  School Fees
+  PTA
+  Uniform
+  Destruction
+  Extra Lessons
+  Bus
+  Books
+  Extras (Excursion)
+  Boarding House Fees
+  Miscellaneous like (NECO, WAEC, BECE etc...)
+
+
+Get Fees
+  For a term
+  For a session
+  For a length of time
+  For everytime
+
+Edit Fees
+  Whole Fees
+  Details
+    Name | Amount (May only be able to update subFees if available) | Division of payment | term | Session | Others |
+    Payment Types | Constraints (eg. Only for SS3)
+
+Delete Fees
+  Whole Fees
+  Details
+    Name | Amount | Division of payment | term | Session | Others |
+    Payment Types
+
+
+History
+
+Get History
+Admin Get
+Student Get
+
+STUDENTS WITH PENDING FEES
+Aggregate based on (Give details of transfered out or graduated)
+  Class
+  Arm
+  Whole School
+  Pending Fee
+  Students that are free
+  Destruction of school properties
+  Other miscellaneous fees like (WAEC, BECE, NECO etc...)
+
+*/
+
+exports.createFee = () => {
+  /*
+  Uploader id
+  Check if admin
+  Name
+  Details
+  Constraints
+  Term
+  session
+  All / (all terms)
+  Check if a fee exists for that type in the term/session before creating
+  A Fee enters a document and a session field is filled
+  In types, the fees value is modified, i.e, the particular name object 
+  recieves the new
+  ObjectId as an  unshift
+
+  **Likewise delete
+  */
+  const {} = req.body;
+
+  Fee.findOneAndDelete(
+    { _id: id },
+    {
+      $push: {},
+      $set: {},
+    }
+  );
+  Fee.create({}).then().then();
+};
+
+exports.delete;
