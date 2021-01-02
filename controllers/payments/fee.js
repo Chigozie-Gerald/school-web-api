@@ -1,5 +1,7 @@
 const Fee = require("../../models/fee");
-const Type = require("../../models/Types");
+const TypeClassName = require("../../models/Types").TypeClassName;
+const TypeSession = require("../../models/Types").TypeSession;
+const Type = require("../../models/Types").Type;
 const Checker = require("../staff/resultClass");
 
 exports.postFee = function (req, res) {
@@ -8,6 +10,8 @@ exports.postFee = function (req, res) {
     className,
     staffId,
     compulsory,
+    isCategorized,
+    category,
     online,
     term,
     allClasses,
@@ -19,6 +23,7 @@ exports.postFee = function (req, res) {
   if (
     !staffId ||
     (!allClasses && !new Checker().isArray(className)) ||
+    (isCategorized && !category) ||
     !new Checker().isArray(!subFees) ||
     !session
   ) {
@@ -26,36 +31,49 @@ exports.postFee = function (req, res) {
       msg: "Please fill in the required fields",
     });
   } else {
-    var fee = new Fee({
-      name,
-      className,
-      staffId,
-      compulsory,
-      online: typeof online !== "boolean" ? online : false,
-      allClasses: typeof allClasses === "boolean" ? allClasses : false,
-      term: term ? term : 3,
+    Fee.findOne({
       session,
-      currency: currency ? currency : "naira",
-      subFees,
-    });
+      name,
+    })
+      .then((fee) => {
+        if (fee) {
+          res.status(400).send({ msg: "Fee already exists" });
+        } else {
+          var fee = new Fee({
+            name,
+            className,
+            staffId,
+            compulsory,
+            isCategorized,
+            category,
+            online: typeof online !== "boolean" ? online : false,
+            allClasses: typeof allClasses === "boolean" ? allClasses : false,
+            term: term ? term : 3,
+            session,
+            currency: currency ? currency : "naira",
+            subFees,
+          });
 
-    fee.save((err, new_fee) => {
-      if (err) {
-        res.status(500).send({
-          msg: "Something went wrong",
-        });
-      } else if (new_fee) {
-        res.send(new_fee);
-      }
-    });
+          fee.save((err, new_fee) => {
+            if (err) {
+              res.status(500).send({
+                msg: "Something went wrong",
+              });
+            } else if (new_fee) {
+              res.send(new_fee);
+            }
+          });
+        }
+      })
+      .catch(() => res.status(500).send({ msg: "Something went wrong" }));
   }
 };
 
 exports.deleteFee = (req, res) => {
   /*Can only delete for an active session
    */
-  const { _id, staffId } = req.body;
-
+  const { _id, staffId, deleteFee } = req.body;
+  //deleteFee should be a boolean to be accessed in canUpdateFee middleware
   Fee.updateOne(
     {
       _id,
@@ -74,29 +92,46 @@ exports.deleteFee = (req, res) => {
     });
 };
 
-exports.getFee = (req, res) => {
+exports.getStudentFee = (req, res) => {
+  //How do I get the active term
   /*
   NAME | CLASS | 
    */
-  const { className, category, session } = req.body;
+  const { className, StartSessionId, studentId, term } = req.body;
 
-  if (!className || !session) {
+  if (!className || !StartSessionId || !studentId || !term) {
     res.status(400).send({
       msg: "Please fill in required fields",
     });
   } else {
     Fee.find({
       className,
-      session,
-      category,
+      isDeleted: false,
     })
       .sort({ createdAt: -1 })
-      .then((list) => {
-        if (list.length > 0) {
-          res.send(list);
+      .then((fee) => {
+        if (fee.length > 0) {
+          TypeSession.findOne({ _id: StartSessionId })
+            .then((session) => {
+              if (session) {
+                const feeResult = fee.filter(
+                  (e) => e.createdAt >= session.createdAt
+                );
+                res.send(feeResult);
+              } else {
+                res
+                  .status(500)
+                  .send({ msg: "Session you provided doesn't exist" });
+              }
+            })
+            .catch(() =>
+              res.status(500).send({
+                msg: "Something went wrong",
+              })
+            );
         } else {
-          res.status(400).send({
-            msg: "No Fees yet",
+          res.status(500).send({
+            msg: "Fee not found",
           });
         }
       })
@@ -109,9 +144,56 @@ exports.getFee = (req, res) => {
   }
 };
 
-exports.fee = function (req, res) {
+exports.getStaffFee = (req, res) => {
+  const { StartSessionId, staffId, term } = req.body;
+
+  if (!StartSessionId || !staffId || !term) {
+    res.status(400).send({
+      msg: "Please fill in required fields",
+    });
+  } else {
+    Fee.find({
+      isDeleted: false,
+    })
+      .sort({ createdAt: -1 })
+      .then((fee) => {
+        if (fee.length > 0) {
+          TypeSession.findOne({ _id: StartSessionId })
+            .then((session) => {
+              if (session) {
+                const feeResult = fee.filter(
+                  (e) => e.createdAt >= session.createdAt
+                );
+                res.send(feeResult);
+              } else {
+                res
+                  .status(500)
+                  .send({ msg: "Session you provided doesn't exist" });
+              }
+            })
+            .catch(() =>
+              res.status(500).send({
+                msg: "Something went wrong",
+              })
+            );
+        } else {
+          res.status(500).send({
+            msg: "Fee not found",
+          });
+        }
+      })
+      .catch((err) => {
+        res.status(500).send({
+          msg: "Something went wrong. Please try again",
+        });
+        throw err;
+      });
+  }
+};
+
+exports.getAdminFee = function (req, res) {
   Fee.find()
-    .sort({ className: 1 })
+    .sort({ createdAt: 1 })
     .then((fee) => {
       res.send(fee);
     })
@@ -131,6 +213,8 @@ exports.updateFee = function (req, res) {
     className,
     allClasses,
     compulsory,
+    isCategorized,
+    category,
     online,
     term,
     session,
@@ -138,45 +222,156 @@ exports.updateFee = function (req, res) {
     subFees,
   } = req.body;
 
-  Fee.findOne({ _id: id, staffId, isDeleted: false })
-    .then((fee) => {
-      Fee.updateOne(
-        { _id: id, staffId },
-        {
-          name: name ? name : fee.name,
-          className: className ? className : fee.className,
-          allClasses:
-            typeof allClasses === "boolean" ? allClasses : fee.allClasses,
-          compulsory:
-            typeof allClasses === "boolean" ? compulsory : fee.compulsory,
-          online: typeof allClasses === "boolean" ? online : fee.online,
-          term: typeof term === "number" ? term : fee.term,
-          session: session ? session : fee.session,
-          currency: currency ? currency : fee.currency,
-          subFees: subFees ? subFees : fee.subFees,
-        }
-      )
-        .then((update) => {
-          if (update) {
-            res.send(update);
-          } else {
-            res.status(500).send({
-              msg: "Something went wrong",
-            });
-          }
-        })
-        .catch((err) =>
-          res.status(500).send({ err, msg: "Something went wrong" })
-        );
+  Fee.updateOne(
+    { _id: id, staffId, isDeleted: false },
+    {
+      name,
+      className,
+      allClasses,
+      compulsory,
+      online,
+      isCategorized,
+      category,
+      term,
+      session,
+      currency,
+      subFees,
+    },
+    { omitUndefined: true }
+  )
+    .then((update) => {
+      if (update) {
+        res.send(update);
+      } else {
+        res.status(500).send({
+          msg: "Something went wrong",
+        });
+      }
     })
-    .catch((err) => {
-      res.status(500).send({
-        msg: "Something went wrong",
-      });
-      throw err;
-    });
+    .catch((err) => res.status(500).send({ err, msg: "Something went wrong" }));
 };
 
+exports.updateSubFees = (req, res) => {
+  const { id, subFee } = req.body;
+
+  if (!id || !subFees) {
+    res.status(400).send({ msg: "Incomplete info" });
+  } else {
+    Fee.findBOne({ _id: id, isDeleted: false })
+      .then((fee) => {
+        if (fee) {
+          let found = false;
+          fee.subFees.map((elem, n) => {
+            if (elem.subName === subFee.subName) {
+              found = n;
+            }
+          });
+          if (typeof found === "number") {
+            fee.subFees[found] = subFee;
+            fee.save((err, saved) => {
+              if (err) {
+                res.status(500).send({
+                  msg: "Something went wrong",
+                });
+              } else {
+                res.send(saved);
+              }
+            });
+          } else {
+            res.status(400).send({
+              msg: "Sub Fee not found",
+            });
+          }
+        } else {
+          res.status(400).send({ msg: "Fee no found" });
+        }
+      })
+      .catch((err) =>
+        res.status(500).send({ err, msg: "Something went wrong" })
+      );
+  }
+};
+exports.addSubFees = (req, res) => {
+  const { subFee, id } = req.body;
+
+  if (!id || !subFees) {
+    res.status(400).send({ msg: "Incomplete info" });
+  } else {
+    Fee.findOne({ _id: id, isDeleted: false })
+      .then((fee) => {
+        if (fee) {
+          let found = false;
+          fee.subFees.map((elem, n) => {
+            if (elem.subName === subFee.subName) {
+              found = true;
+            }
+          });
+          if (!found) {
+            fee.subFees.push(subFee);
+            fee.save((err, saved) => {
+              if (err) {
+                res.status(500).send({
+                  msg: "Something went wrong",
+                });
+              } else {
+                res.send(saved);
+              }
+            });
+          } else {
+            res.status(400).send({
+              msg: "Sub Fee already exists",
+            });
+          }
+        } else {
+          res.status(400).send({ msg: "Fee no found" });
+        }
+      })
+      .catch((err) =>
+        res.status(500).send({ err, msg: "Something went wrong" })
+      );
+  }
+};
+
+exports.deleteSubFees = (req, res) => {
+  const { subFee, id } = req.body;
+
+  if (!id || !subFees) {
+    res.status(400).send({ msg: "Incomplete info" });
+  } else {
+    Fee.findOne({ _id: id, isDeleted: false })
+      .then((fee) => {
+        if (fee) {
+          let found = false;
+          fee.subFees.map((elem, n) => {
+            if (elem.subName === subFee.subName) {
+              found = n;
+            }
+          });
+          if (typeof found === "number") {
+            fee.subFees.splice(found, 1);
+            fee.save((err, saved) => {
+              if (err) {
+                res.status(500).send({
+                  msg: "Something went wrong",
+                });
+              } else {
+                res.send({ msg: "Item deleted", saved });
+              }
+            });
+          } else {
+            res.status(400).send({
+              msg: "Sub Fee already exists",
+            });
+          }
+        } else {
+          res.status(400).send({ msg: "Fee no found" });
+        }
+      })
+      .catch((err) =>
+        res.status(500).send({ err, msg: "Something went wrong" })
+      );
+  }
+};
 /*
 TERM MANIPULATIONS CAN ONLY BE DONE IN A 
 TERM THAT HASN'T STARTED OR A CURRENT TERM
@@ -196,7 +391,7 @@ Post Fees (**DONE)
   Miscellaneous like (NECO, WAEC, BECE etc...)
 
 
-Get Fees
+Get Fees as a student, as a staff, as an admin (**DONE)
   For a term
   For a session
   For a length of time
@@ -241,8 +436,7 @@ Aggregate based on (Give details of transfered out or graduated)
 
 */
 
-exports.createFee = () => {
-  /*
+/*
   Uploader id
   Check if admin
   Name
@@ -259,16 +453,3 @@ exports.createFee = () => {
 
   **Likewise delete
   */
-  const {} = req.body;
-
-  Fee.findOneAndDelete(
-    { _id: id },
-    {
-      $push: {},
-      $set: {},
-    }
-  );
-  Fee.create({}).then().then();
-};
-
-exports.delete;

@@ -1,10 +1,10 @@
 mongoose = require("mongoose");
-const Student = require("../../models/student");
 var bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const config = require("../../config/key");
 const School = require("../../models/school");
 const Staff = require("../../models/staff");
+const Student = require("../../models/student");
 const NewsReport = require("../../models/news");
 const { default: validator } = require("validator");
 
@@ -105,6 +105,21 @@ exports.postRegister = (req, res) => {
   }
 };
 
+exports.little = (req, res) => {
+  const { stateOfOrigin, _id, nationality } = req.body;
+  Student.findOne({ _id })
+    .then((ress) => {
+      Student.updateOne(
+        { _id },
+        { $set: { $set: { stateOfOrigin } }, nationality }
+      )
+        .then((stud) => {
+          res.send(stud);
+        })
+        .catch((err) => res.status(500).send("Something went wrong" + err));
+    })
+    .catch((err) => res.status(500).send("Something went wrong" + err));
+};
 exports.editProfile = function (req, res) {
   const {
     dob,
@@ -121,7 +136,7 @@ exports.editProfile = function (req, res) {
     lga,
     religion,
   } = req.body;
-  if ((!dob, !firstname || !lastname || !arm || !regNumber || !sex)) {
+  if (!regNumber) {
     res.status(400).send({
       msg: "Please fill in the required fields(s)",
     });
@@ -141,7 +156,8 @@ exports.editProfile = function (req, res) {
         stateOfOrigin,
         lga,
         religion,
-      }
+      },
+      { omitUndefined: true }
     )
       .then((stud) => {
         if (stud) {

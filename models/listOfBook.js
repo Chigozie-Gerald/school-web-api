@@ -1,17 +1,40 @@
-var mongoose = require("mongoose");
-var Schema = mongoose.Schema;
+const mongoose = require("mongoose");
+const {
+  classNameType,
+  sessionType,
+  subjectType,
+  staffType,
+  studentType,
+  categoryType,
+} = require("../controllers/types/.");
+const Schema = mongoose.Schema;
 
-listOfBookSchema = new Schema({
-  className: { type: String, trim: true },
-  category: { type: String, trim: true, default: null },
+const bookSchema = new Schema({
+  uploaderId: staffType,
+  name: { type: String, unique: true, trim: true, required: true },
+  section: { type: String, trim: true },
+  subject: subjectType,
+  details: { type: String, trim: true },
+  authors: [{ type: String, trim: true, required: true }],
+  //Students represent students interested in the book
+  student: [studentType],
+  volume: { type: Number },
   publisher: { type: String, trim: true },
-  bookName: { type: String, trim: true },
-  subject: { type: String, trim: true },
-  createdAt: { type: Number, default: Date.now },
-  volume: { type: Number, trim: true, default: null },
-  session: { type: String, trim: true },
-  edition: { type: Number, trim: true },
-  authors: { type: String, trim: true }
+  published: { type: Number },
+  isbn: { type: Number },
+  edition: { type: Number, required: true },
 });
 
-module.exports = mongoose.model("ListOfBook", listOfBookSchema);
+const listOfBookSchema = new Schema({
+  className: classNameType,
+  uploaderId: staffType,
+  category: categoryType,
+  session: sessionType,
+  books: [bookSchema],
+  createdAt: { type: Number, default: Date.now },
+});
+
+listOfBookSchema.pre("save", function (next) {});
+
+exports.Book = mongoose.model("Book", bookSchema);
+exports.ListOfBook = mongoose.model("ListOfBook", listOfBookSchema);

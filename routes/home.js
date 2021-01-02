@@ -4,10 +4,11 @@ var router = express.Router();
 landing = require("../controllers/register/landing");
 const news = require("../controllers/news/news");
 const suggestion = require("../controllers/externals/suggestion");
+const cert = require("../controllers/cert/cert");
 const type = require("../controllers/types/create");
-const auth = require("../middleware/auth");
-const admin = require("../middleware/admin");
-const section = require("../middleware/section");
+//Auth Checks
+const { auth } = require("../middleware/auth");
+const { admin, editor } = require("../middleware/admin");
 
 //landings
 router.get("/", landing.homepage);
@@ -29,9 +30,16 @@ router.post("/replySuggestion", suggestion.replySuggestion);
 router.get("/viewAllSuggestions", suggestion.viewAllSuggestions);
 router.post("/viewSuggestion", suggestion.viewSuggestion);
 
-//Types
-router.post("/viewSuggestion", type.createType);
-router.post("/deleteTypeSect", type.deleteTypeSect);
-router.post("/addTypeSect", type.addTypeSect);
+//Cert
+router.post("/certifySession", editor, cert.certifySession);
+
+//Types add middleware here
+router.get("/allTypes", editor, type.allTypes);
+router.get("/deleteAllTypes", editor, type.deleteAllTypes);
+router.post("/createType", editor, type.createType);
+router.post("/deleteTypeFee", editor, type.deleteTypeFee);
+router.post("/deleteTypeSect", editor, type.deleteTypeSect);
+router.post("/addTypeSect", editor, type.addTypeSect);
+router.post("/editTypeSect", editor, type.editTypeSect);
 
 module.exports = router;

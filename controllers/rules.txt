@@ -1,0 +1,13 @@
+***Session
+-Certifying a session allows us to create a new session. A new session cannot be
+created without certifying a previous one
+-Only a referenced session can be certified
+-To be referenced, a result must be available for that session
+
+Deleting a session can only be possible if the session isn't refderenced
+
+***Types
+-Types are referenced mainly by ids
+
+***Staff
+-Editors can do all, admins can do some

@@ -14,6 +14,7 @@ const STAFFMODEL = new Schema({
     },
   ],
   sex: { type: String, required: true },
+  staffId: { type: String, required: true },
   lga: { type: String, trim: true },
   teacher: { type: Boolean, required: true, trim: true, default: true },
   editor: { type: Boolean, required: true, trim: true, default: false },
@@ -44,14 +45,12 @@ const STAFFMODEL = new Schema({
       trim: true,
     },
   ],
-  formteacher: {
-    _id: false,
-    isFormTeacher: { type: Boolean, default: false },
-    className: {
+  formteacher: [
+    {
       _id: false,
-      name: { type: String },
+      className: { type: String },
     },
-  },
+  ],
   subject: [
     {
       name: {
@@ -85,3 +84,4 @@ STAFFMODEL.post("validate", function () {
 module.exports = mongoose.model("Staff", STAFFMODEL);
 
 //Added Admin key-value pair
+//Editors can do all, admin can do some

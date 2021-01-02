@@ -1,5 +1,22 @@
+const { TypeSession, Type } = require("../../models/Types");
+/*
+Structure of result = [
+  [head: an object with session, terms, etc],
+  [term with sub length as value],
+  [subjects: subjects and scores]
+]
+*/
+
 class ResultMaker {
   constructor(terms, className, session, subjects = []) {
+    this.TYPE = async function () {
+      return await Type.findOne();
+    }.call().session;
+    if (this.TYPE && this.TYPE.session) {
+      this.typeSession = this.TYPE.session;
+    } else {
+      throw "Error: " + this.TYPE;
+    }
     this.terms = [];
     this.head = [{ terms: 0, session: "", className: "", excluded: -3 }];
     this.subjects = [];
@@ -8,6 +25,9 @@ class ResultMaker {
     if (arguments.length === 0) {
       return;
     } else {
+      if (this.typeSession.length === 0) {
+        throw "Session has to be created before result posting";
+      }
       if (typeof terms !== "number") {
         throw "Invalid Term type in constructor";
       }
@@ -60,6 +80,11 @@ class ResultMaker {
         RETURNS Boolean
   */
   isArray = (item) => Array.prototype.isPrototypeOf(item);
+  sessionTermCheck = () =>
+    this.typeSession.some(
+      (elem) =>
+        elem._id === this.head[0].session && elem.term >= this.head[0].terms
+    );
   /* Format
         Concats head, result and term
         Ensures this.head[0].excluded integrity isn't compromised
@@ -72,6 +97,8 @@ class ResultMaker {
     this.result = this.head.concat(this.terms).concat(this.subjects);
     if (!this.check()) {
       throw "Result size inconsistent with inner variables";
+    } else if (!this.sessionTermCheck()) {
+      throw "The type of Session provided is invalid or the term is bad";
     }
     return this.result;
   };

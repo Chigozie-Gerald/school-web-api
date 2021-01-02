@@ -22,6 +22,7 @@ app.listen(
       useUnifiedTopology: true,
     })
     .then(() => {
+      mongoose.set("runValidators", true);
       console.log("Mongo connected...");
       console.log("Server started on port 3040");
     })

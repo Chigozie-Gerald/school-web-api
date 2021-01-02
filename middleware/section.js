@@ -1,4 +1,6 @@
-const Type = require("../models/Types");
+const Type = require("../models/Types").Type;
+const TypeClassName = require("../models/Types").TypeClassName;
+const TypeSession = require("../models/Types").TypeSession;
 
 //For session and class
 exports.objCheck = (value, arr, session = false, term) => {
@@ -37,13 +39,13 @@ exports.check = (value, arr) => {
   }
 };
 
-exports.isClass = (value) => {
-  Type.findOne()
-    .then((result) => {
-      if (result) {
-        return this.objCheck(value, result.className);
+exports.isClass = (title) => {
+  TypeClassName.findOne({ title: value })
+    .then((className) => {
+      if (className) {
+        return true;
       } else {
-        throw "Create a 'Type' before executing this action";
+        return false;
       }
     })
     .catch((err) => {
@@ -51,13 +53,16 @@ exports.isClass = (value) => {
     });
 };
 
-exports.isSession = (value) => {
-  Type.findOne()
-    .then((result) => {
-      if (result) {
-        return this.objCheck(value, result.session, true);
+exports.isSession = (title, term = false) => {
+  TypeSession.findOne({ title })
+    .then((sess) => {
+      if (sess) {
+        if (term && (term > sess.term || term < 0)) {
+          return false;
+        }
+        return true;
       } else {
-        throw "Create a 'Type' before executing this action";
+        throw false;
       }
     })
     .catch((err) => {
@@ -78,34 +83,35 @@ exports.isFee = (value) => {
       throw err;
     });
 };
-exports.isTerm = (session, term) => {
-  Type.findOne()
-    .then((result) => {
-      if (result) {
-        return this.objCheck(session, result.session, true, term);
-      } else {
-        throw "Create a 'Type' before executing this action";
-      }
-    })
-    .catch((err) => {
-      throw err;
-    });
+exports.isTerm = (title, term) => {
+  this.isSession(title, term);
 };
 
+// exports.isEqual = (item1, item2) => {
+//   try {
+//     assert.deepStrictEqual(item1, item2);
+//     return true;
+//   } catch (err) {
+//     return false;
+//   }
+// };
 exports.isEqual = (item1, item2) => {
-  try {
-    assert.deepStrictEqual(item1, item2);
-    return true;
-  } catch (err) {
-    return false;
+  let result = true;
+  for (let a of item2) {
+    if (!item1.has(a)) {
+      result = false;
+      break;
+    }
   }
+  return result;
 };
 exports.keyCheck = (object, arr) => {
-  const keyChecker = new ResultMaker();
-  if (keyChecker.isObject(object) && keyChecker.isArray(arr)) {
+  const { isArray, isObject } = require("../controllers/types/create");
+  if (isObject(object) && isArray(arr)) {
     const set1 = new Set(Object.keys(object));
-    const set2 = new Set(Object.keys(object).concat(arr));
-    return isEqual(set1, set2);
+    const concatArr = Object.keys(object).concat(arr);
+    const set2 = new Set(concatArr);
+    return this.isEqual(set1, set2);
   } else {
     return false;
   }

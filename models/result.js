@@ -5,7 +5,7 @@ const ObjectId = mongoose.Schema.Types.ObjectId;
 //Each document indicates a student
 //`unique: true` needs useCreateIndex in connect to be set to true
 const resultSchema = new Schema({
-  studentId: { type: ObjectId, required: true, unique: true },
+  studentId: { type: ObjectId, ref: "Student", required: true, unique: true },
   result: [{ type: Array, required: true }],
   createdAt: { type: String, default: Date.now },
 });

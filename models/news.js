@@ -4,7 +4,7 @@ const ObjectId = mongoose.Types.ObjectId;
 
 const newsModel = new Schema({
   title: { type: String, required: true },
-  // uploaderId: { type: ObjectId, required: true },
+  uploaderId: { type: ObjectId, ref: "Staff", required: true },
   uploaderId: { type: String, required: true },
   body: [
     {

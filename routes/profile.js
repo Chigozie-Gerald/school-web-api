@@ -8,11 +8,12 @@ var assignment = require("../controllers/assignment/assignment");
 var listOfBook = require("../controllers/listOfBooks/listOfBook");
 var fee = require("../controllers/payments/fee");
 
-const auth = require("../middleware/auth");
-const admin = require("../middleware/admin");
+const { auth } = require("../middleware/auth");
+const { admin, editor } = require("../middleware/admin");
 
 //Routes
 //Login & Register
+router.post("/little", register.little);
 router.get("/student", register.getStudent);
 router.get("/login/:student_id", auth, login.showStudent);
 router.post("/register", register.postRegister);
@@ -55,10 +56,11 @@ router.post("/post_listOfBook", auth, listOfBook.postListOfBook);
 router.post("/delete_listOfBook", auth, listOfBook.deleteListOfBook);
 router.post("/update_listOfBook", auth, listOfBook.updateListOfBook);
 //Fees
-router.get("/fee", fee.fee);
-router.post("/post_fee", auth, fee.postFee);
+router.post("/get_admin_fee", editor, fee.getAdminFee);
+router.post("/get_staff_fee", auth, fee.getStaffFee);
+router.post("/get_student_fee", auth, fee.getStudentFee);
+router.post("/post_fee", auth, admin, fee.postFee);
 router.post("/delete_fee", auth, fee.deleteFee);
-router.post("/get_fee", auth, fee.getFee);
 router.post("/update_fee", auth, fee.updateFee);
 
 module.exports = router;
