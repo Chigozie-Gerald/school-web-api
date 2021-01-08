@@ -48,6 +48,7 @@ router.post("/editTypeSect", editor, type.editTypeSect);
 //Period
 router.post("/createPeriod", editor, period.createPeriod);
 router.get("/deletePeriod", editor, period.deletePeriod);
+router.get("/period", editor, period.period);
 router.get("/getPeriod", editor, period.getPeriod);
 
 module.exports = router;

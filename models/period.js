@@ -1,102 +1,173 @@
 const mongoose = require("mongoose");
+const { virtuals } = require(".");
 const {
-  subjectType,
   sessionType,
-  classNameType,
   termType,
+  subjectType,
+  armType,
 } = require("../controllers/types");
-const {
-  getSession,
-  getTerm,
-  getSubject,
-} = require("../controllers/types/getTypes");
+const { getClassName, isSeniorSub } = require("../controllers/types/getTypes");
 const Schema = mongoose.Schema;
-const schmeOptions = { _id: false };
-const discrimPeriod = new Schema({}, { discriminatorKey: "kind", _id: false });
-const subjectPeriodSchema = new Schema(
-  {
-    subject: subjectType,
-    start: { type: Number, required: true },
-    stop: {
-      type: Number,
-      required: true,
-    },
-  },
-  schmeOptions
-);
-const sessionPeriodSchema = new Schema(
+const days = ["mon", "tue", "wed", "thurs", "fri", "sat", "sun"];
+
+periodSchema = new Schema(
   {
     session: sessionType,
-    terms: termType,
+    term: termType,
+    start: {
+      _id: false,
+      type: [Number],
+      required: true,
+      validate: {
+        validator: function (value) {
+          return value.length === this.term * days.length;
+        },
+        message: "Invalid Stop Format in Periods",
+      },
+    },
+    stop: {
+      _id: false,
+      type: [Number],
+      required: true,
+      validate: {
+        validator: function (value) {
+          return value.length === this.term * days.length;
+        },
+        message: "Invalid Stop Format in Periods",
+      },
+    },
+
+    period: [
+      {
+        _id: false,
+        term: {
+          type: Number,
+          min: 1,
+          required: true,
+          validate: {
+            validator: function (value) {
+              return value <= this.term;
+            },
+            message: "Term validationfailed",
+          },
+        },
+        subject: subjectType,
+        className: {
+          type: Schema.Types.ObjectId,
+          ref: "Type.className",
+          required: true,
+          validate: function (value) {
+            return getClassName({
+              className: value,
+              senior: isSeniorSub(this.subject),
+            });
+          },
+        },
+        arm: armType,
+        day: { type: String, enum: days, required: true },
+        start: {
+          type: Number,
+          required: true,
+          validate: {
+            validator: function (value) {
+              return this.stop > value;
+            },
+            message: "Start time cannot be later than stop time",
+          },
+        },
+        stop: {
+          type: Number,
+          required: true,
+          validate: {
+            validator: function (value) {
+              return value > this.start;
+            },
+            message: "Stop time cannot be earlier than start time",
+          },
+        },
+      },
+      virtuals,
+    ],
   },
-  schmeOptions
+  virtuals
 );
-const termPeriodSchema = new Schema(
+periodSchema.path("period").schema.set("toJSON", { virtuals: true });
+const periodStartVirtual = periodSchema
+  .path("period")
+  .schema.virtual("startVal");
+const periodStopVirtual = periodSchema.virtual("stopVal");
+periodStopVirtual.get(function () {
+  return "bush";
+});
+periodStartVirtual.get(function () {
+  // console.log(this.parent().period);
+
+  return this.start + 40;
+});
+/*
+Structure of input
+start = []
+top = [{}, 1,2,3,4,5,6,7,1,2,3,4,5,6,7,1,2,3,4,5,6,7]
+getDayDiff = (day)=>{
+  const index = days.indexOf(day)
+  if(index === -1){
+    throw "Provide a valid day"
+  }else{
+    return stop[index] - start[index]
+  }
+}
+start, stop
+{
+  session:"",
+  periodArray:[ /first loop
+    {
+
+      className:"",
+      arm:"",
+      period:[
+                [{day, subject, start, stop, term}], //second loop
+                [],
+                []
+      ] with the length here equaling the terms for the session type
+    },
+    {}
+  ]
+}
+
+
+Structure of output
+[
   {
-    days: { type: Number, required: true, min: 0, max: 7, default: 5 },
-  },
-  schmeOptions
-);
-
-const periodSchema = new Schema({
-  className: classNameType,
-  period: [[discrimPeriod]],
-  createdAt: { type: Number, default: Date.now, required: true },
-});
-sessionPeriodSchema.pre("validate", async function (next) {
-  if (
-    (await getSession(this.session).validator()) &&
-    (await getTerm({ term: this.terms, all: true }).validator())
-  ) {
-    next();
-  } else {
-    throw { msg: "Validation for Session Period Failed" };
+    className:"",
+    arm,
+    day, // Remains same
+    subject, // Remains same
+    start, // Remains same
+    stop, // Remains same
+    term // Remains same
   }
-});
-subjectPeriodSchema.pre("validate", async function (next) {
-  if (await getSubject(this.subject).validator()) {
-    next();
-  } else {
-    throw { msg: "Validation for Subject Period Failed" };
-  }
-});
-
-const periodPath = periodSchema.path("period");
-const TermPeriodScheme = periodPath.discriminator(
-  "TermPeriodScheme",
-  termPeriodSchema
-);
-const SessionPeriodScheme = periodPath.discriminator(
-  "SessionPeriodScheme",
-  sessionPeriodSchema
-);
-const SubjectPeriodScheme = periodPath.discriminator(
-  "SubjectPeriodScheme",
-  subjectPeriodSchema
-);
-
-const Period = mongoose.model("Periodd", periodSchema);
-const SubjectPeriod = mongoose.model("SubjectPeriod", subjectPeriodSchema);
-const TermPeriod = mongoose.model("TermPeriod", termPeriodSchema);
-const SessionPeriod = mongoose.model("SessionPeriod", sessionPeriodSchema);
-module.exports = {
-  SubjectPeriod,
-  TermPeriod,
-  SessionPeriod,
-  Period,
-};
+]
+*/
+/*
+What happens when someone adds a period for a particular class arm withn inconsistent timing
+[{
+  className: "",
+  arm: "",
+  period:[[{day, start, stop, term}],[{},{}]]
+}]
+i am sorting based on 2 criterias
+-term -day
+first sort by term(or term should be put in arrays that signify their values), term now has seperate arrays, then sort by day
+{class1}, {class2}
+*/
+module.exports = mongoose.model("Period", periodSchema);
 /**
- In period session :{
-   name: "", term:""
+ subject:{
+   term:1,
+   subject:"english",
+   day:"monday",
+   start:9,
+   stop:10
  }
- term :[5,5,5]
 
- [[head: number of terms, session name],[term: term is the number of days: default 5], [],[],[],[],[]]
- 
- 
- 
- day:{
-
- }
- 
  */

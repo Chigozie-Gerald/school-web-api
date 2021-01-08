@@ -14,7 +14,8 @@ Deleting a session can only be possible if the session isn't refderenced
 
 
 
-
+How to track active session?
+Make Break, Long break, short breaks a subject
 /////
 Timetable ,Periods, Assignment
 Assign Classes, Assign Subject

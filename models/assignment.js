@@ -9,7 +9,7 @@ const {
 } = require("../controllers/types");
 var Schema = mongoose.Schema;
 
-assignmentSchema = new Schema({
+const assignmentSchema = new Schema({
   teacherId: staffType,
   className: classNameType,
   arm: armType,
