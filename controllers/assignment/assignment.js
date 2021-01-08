@@ -2,21 +2,35 @@ const mongoose = require("mongoose");
 const Assignment = require("../../models/assignment");
 
 exports.postAssignment = function (req, res) {
-  const { className, arm, subject, submit, time, teacherId, text } = req.body;
+  const {
+    teacherId,
+    className,
+    arm,
+    session,
+    subject,
+    title,
+    instruction,
+    questions,
+    dueDate,
+    dueTime,
+  } = req.body;
 
-  if (!className || !arm || !subject || !text) {
+  if (!className || !arm || !subject || !questions) {
     res.status(400).send({
       msg: "Please fill in all fields",
     });
   } else {
     var assignment = new Assignment({
+      teacherId,
       className,
       arm,
+      session,
       subject,
-      submit,
-      text,
-      time,
-      teacherId,
+      title,
+      instruction,
+      questions,
+      dueDate,
+      dueTime,
     });
 
     assignment.save((err, newAssignment) => {
@@ -32,9 +46,9 @@ exports.postAssignment = function (req, res) {
 };
 
 exports.getAssignment = function (req, res) {
-  const { className, arm } = req.body;
+  const { className, arm, session } = req.body;
 
-  if (!className || !arm) {
+  if (!className || !arm || !session) {
     res.status(400).send({
       msg: "Please fill in all fields",
     });
@@ -42,6 +56,7 @@ exports.getAssignment = function (req, res) {
     Assignment.find({
       className,
       arm,
+      session,
     })
       .sort({ createdAt: -1 })
       .then((list) => {
@@ -63,32 +78,19 @@ exports.getAssignment = function (req, res) {
 };
 
 exports.deleteAssignment = function (req, res) {
-  const { _id, teacherId } = req.body;
+  const { _id } = req.body;
 
   Assignment.deleteOne({
     _id,
-    teacherId,
+    teacherId: req.user.user,
   })
     .then((result) => {
-      Assignment.find({
-        teacherId,
-      })
-        .sort({ createdAt: -1 })
-        .then((assigns) => {
-          if (assigns.length > 0) {
-            res.send(assigns);
-          } else {
-            res.status(400).send({
-              msg: "No assignments",
-            });
-          }
-        })
-        .catch((err) => {
-          res.status(500).send({
-            msg: "Something went wrong",
-          });
-          throw err;
-        });
+      const num = result.n;
+      res.send(
+        `${num === 0 ? "No" : num} assignment${num <= 1 ? "" : "s"} ${
+          num <= 1 ? "was" : "were"
+        } deleted`
+      );
     })
     .catch((err) => {
       res.status(400).send({
@@ -118,10 +120,10 @@ exports.updateAssignment = function (req, res) {
     className,
     arm,
     subject,
-    submit,
-    time,
-    text,
-    teacherId,
+    title,
+    instruction,
+    dueDate,
+    dueTime,
   } = req.body;
   if (!_id || !className || !arm || !subject || !submit || !time || !text) {
     res.status(400).send({
@@ -129,17 +131,18 @@ exports.updateAssignment = function (req, res) {
     });
   } else {
     Assignment.updateOne(
-      { _id, teacherId },
-      { className, arm, subject, submit, time, text }
+      { _id, teacherId: req.user.user },
+      { className, arm, subject, title, instruction, dueDate, dueTime },
+      { omitUndefined: true }
     )
-      .then((assignUpdate) => {
-        Assignment.find({ _id })
-          .then((assigns) => {
-            if (assigns) {
-              res.send(assigns);
+      .then(() => {
+        Assignment.findOne({ _id })
+          .then((assign) => {
+            if (assign) {
+              res.send(assign);
             } else {
               res.status(500).send({
-                msg: "Something went wrong",
+                msg: "Provide the right ID",
               });
             }
           })
@@ -147,14 +150,106 @@ exports.updateAssignment = function (req, res) {
             res.status(500).send({
               msg: "Something went wrong",
             });
-            throw err;
           });
       })
       .catch((err) => {
         res.status(500).send({
           msg: "Something went wrong",
         });
-        throw err;
       });
   }
 };
+
+exports.updateAssignmentQuestion = (req, res) => {
+  const { index, newQuestion } = req.body;
+  if (typeof index !== "number" || typeof newQuestion !== "string") {
+    res.status(400).send({ msg: "Incomplete info" });
+  } else {
+    Assignment.findOne({ teacherId: req.user.user })
+      .then((assign) => {
+        if (assign) {
+          const questionArr = assign.questions.map((elem, n) => {
+            if (n === index) {
+              elem = newQuestion;
+            }
+            return elem;
+          });
+
+          assign.questions = questionArr;
+          assign.save((err, saved) => {
+            if (err) {
+              res.status(500).send("Something went wrong");
+            } else {
+              res.send(saved);
+            }
+          });
+        } else {
+          res.status(400).send({ msg: "Assignment not found" });
+        }
+      })
+      .catch((err) => res.status(500).send({ msg: "Something went wrong" }));
+  }
+};
+
+exports.deleteAssignmentQuestion = (req, res) => {
+  const { index } = req.body;
+  if ((index = "number")) {
+    res.status(400).send({ msg: "Incomplete info" });
+  }
+  Assignment.findOne({ teacherId: req.user.user })
+    .then((assign) => {
+      if (assign) {
+        const questionArr = assign.questions.filter((elem, n) => {
+          return n !== index;
+        });
+
+        assign.questions = questionArr;
+        assign.save((err, saved) => {
+          if (err) {
+            res.status(500).send("Something went wrong");
+          } else {
+            res.send(saved);
+          }
+        });
+      } else {
+        res.status(400).send({ msg: "Assignment not found" });
+      }
+    })
+    .catch((err) => res.status(500).send({ msg: "Something went wrong" }));
+};
+/*
+Periods
+assign
+deassign
+Every session has a term
+every term has a period
+every period has classes
+every class has an arm
+
+in class period, you have the subject and time
+
+period: {
+  session: {},
+  term1:{
+    period: [
+      {
+        className:{},
+        arm:{},
+        subject:[
+          {
+            maths:{
+              
+            },
+            english:"",
+            all the subjects:"",
+            subject:"",
+          }
+        ]
+      }
+    ]
+  },
+  term2:{},
+  term3:{},
+}
+
+*/

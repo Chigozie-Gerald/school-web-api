@@ -479,6 +479,8 @@ exports.editTypeSect = (req, res) => {
   {
     id:"56593303jtr0j30i53jm3", //in this doc, maybe title is 'art'
     name:"category",
+    all:true,
+    senior: true,
     newEdit:"Artism" // 'art' in the title of this doc now changed to 'Artism'
   }
    */
@@ -502,6 +504,20 @@ exports.editTypeSect = (req, res) => {
               type[elem.name].forEach((b, i) => {
                 if (elem.id == b._id) {
                   type[elem.name][i].title = elem.newEdit;
+                  if (typeof elem.senior === "boolean") {
+                    type[elem.name][i].senior = elem.senior;
+                    if (!elem.senior) {
+                      type[elem.name][i].all = false;
+                    }
+                  }
+                  if (typeof elem.all === "boolean") {
+                    if (elem.all) {
+                      type[elem.name][i].senior = true;
+                      type[elem.name][i].all = true;
+                    } else {
+                      type[elem.name][i].all = false;
+                    }
+                  }
                   type.markModified(elem.name);
                 } else {
                   if (elem.name === b) {
@@ -533,7 +549,34 @@ exports.editTypeSect = (req, res) => {
       .catch((err) => res.status(500).send("Something went wrong"));
   }
 };
-
+exports.deleteSession = (req, res) => {
+  const { sessionId } = req.body;
+  if (!sessionId) {
+    res.status(500).send({ msg: "Incomplete info" });
+  } else {
+    Type.findOne()
+      .then((type) => {
+        if (type) {
+          const newSession = type.session.filter(
+            (elem) => elem._id != sessionId
+          );
+          // console.log(newSession, "newSession");
+          type.session = newSession;
+          type.markModified("session");
+          type.save((err, saved) => {
+            if (err) {
+              res.status(500).send(err);
+            } else {
+              res.send(saved);
+            }
+          });
+        } else {
+          res.status(400).send({ msg: "Create a Type" });
+        }
+      })
+      .catch((err) => res.status(500).send(err));
+  }
+};
 //(**done**)Can only add a new session if the session preceeding it has been certified
 //Edit term in session (can only increase or reduce, not less than 1, not more than 12)
 //----Cannot reduce to less than a referenced term

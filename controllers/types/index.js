@@ -15,66 +15,66 @@ const ObjectId = require("mongoose").Types.ObjectId;
 // fee
 exports.feeType = {
   type: String,
-  validate: (value) => getFee(value),
+  validate: getFee(),
   required: true,
 };
 // currency
 exports.currencyType = {
   type: String,
-  validate: (value) => getCurrency(value),
+  validate: getCurrency(),
   required: true,
 };
 // arm
 exports.armType = {
   type: ObjectId,
   ref: "Type.arm",
-  validate: (value) => getArm(value),
+  validate: getArm(),
   required: true,
 };
 // category
 exports.categoryType = {
   type: ObjectId,
   ref: "Type.category",
-  validate: (value) => getCategory(value),
+  validate: getCategory(),
 };
 // classname
 exports.classNameType = {
   type: ObjectId,
   ref: "Type.className",
-  validate: (value) => getClassName(value),
+  validate: getClassName(),
   required: true,
 };
 // session
 exports.sessionType = {
   type: ObjectId,
   ref: "Type.session",
-  validate: (value) => getSession(value),
+  validate: getSession(),
   required: true,
 };
 // term
 exports.termType = {
-  type: String,
-  validate: (value) => getTerm(value),
+  type: Number,
+  validate: getTerm(),
   required: true,
 };
 // subject
 exports.subjectType = {
   type: ObjectId,
   ref: "Type.subject",
-  validate: (value) => getSubject(value),
+  validate: getSubject(),
   required: true,
 };
 //Staff
 exports.staffType = {
   type: ObjectId,
   ref: "Staff",
-  validate: (value) => getStaff(value),
+  validate: getStaff(),
   required: true,
 };
 //Student
 exports.studentType = {
   type: ObjectId,
   ref: "Student",
-  validate: (value) => getStudent(value),
+  validate: getStudent(),
   required: true,
 };

@@ -11,3 +11,10 @@ Deleting a session can only be possible if the session isn't refderenced
 
 ***Staff
 -Editors can do all, admins can do some
+
+
+
+
+/////
+Timetable ,Periods, Assignment
+Assign Classes, Assign Subject

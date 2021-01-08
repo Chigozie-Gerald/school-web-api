@@ -2,6 +2,7 @@ mongoose = require("mongoose");
 var Student = require("../../models/student");
 var School = require("../../models/school");
 const jwt = require("jsonwebtoken");
+const Staff = require("../../models/staff");
 
 exports.homepage = function (req, res) {
   School.find({})
@@ -51,14 +52,31 @@ exports.newSchool = function (req, res) {
 };
 
 exports.userData = function (req, res) {
-  Student.findById(req.user.user)
-    .select("-password")
-    .then((user) => {
-      if (user) {
-        res.json({ user });
-      } else res.status(400).json({ msg: "User is Unavailable" });
-    })
-    .catch((err) => {
-      res.status(400).json({ msg: "Something went wrong" });
-    });
+  if (req.user.type === "student") {
+    Student.findById(req.user.user)
+      .select("-password")
+      .then((user) => {
+        if (user) {
+          res.json({ user });
+        } else res.status(400).json({ msg: "User is Unavailable" });
+      })
+      .catch((err) => {
+        res.status(400).json({ msg: "Something went wrong" });
+      });
+  } else if (req.user.type === "staff") {
+    Staff.findById(req.user.user)
+      .select("-password")
+      .then((user) => {
+        if (user) {
+          res.json({ user });
+        } else res.status(400).json({ msg: "User is Unavailable" });
+      })
+      .catch((err) => {
+        res.status(400).json({ msg: "Something went wrong" });
+      });
+  } else {
+    res
+      .status(500)
+      .send({ msg: "Something went wrong the right type wasn't signed" });
+  }
 };

@@ -8,20 +8,15 @@ const authContinue = (req) => {
   if (bearerHeader !== undefined && bearerHeader !== null) {
     var bearer = bearerHeader.split(" ");
     var token = bearer[1];
-
-    jwt.verify(token, config.jwtSecret, (err, authData) => {
+    return jwt.verify(token, config.jwtSecret, (err, authData) => {
       if (err) {
-        throw {
-          msg: "Invalid Token",
-        };
+        throw "Invalid Token";
       } else if (authData) {
         return authData;
       }
     });
   } else {
-    throw {
-      msg: "No Token, Authorization failed",
-    };
+    throw "No Token, Authorization failed";
   }
 };
 
@@ -53,6 +48,7 @@ const editor = (req, res, next) => {
 
 const admin = (req, res, next) => {
   try {
+    console.log("trying");
     const userData = authContinue(req);
     Staff.findOne({ _id: userData.user, admin: true })
       .then((staff) => {
@@ -73,7 +69,7 @@ const admin = (req, res, next) => {
         });
       });
   } catch (err) {
-    res.status(400).send(err);
+    res.status(400).send({ err, m: "hellp" });
   }
 };
 module.exports = { admin, editor };

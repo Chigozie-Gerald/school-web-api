@@ -6,28 +6,38 @@ Structure of result = [
   [subjects: subjects and scores]
 ]
 */
+exports.getSession = async () => {
+  try {
+    return await TypeSession.find();
+  } catch (err) {
+    throw "err";
+  }
+};
+exports.ResultMaker = class ResultMaker {
+  constructor(SESSION, terms, className, session, subjects = []) {
+    this.typeSession = SESSION;
 
-class ResultMaker {
-  constructor(terms, className, session, subjects = []) {
-    this.TYPE = async function () {
-      return await Type.findOne();
-    }.call().session;
-    if (this.TYPE && this.TYPE.session) {
-      this.typeSession = this.TYPE.session;
-    } else {
-      throw "Error: " + this.TYPE;
+    if (
+      !Array.prototype.isPrototypeOf(this.typeSession) ||
+      this.typeSession.length === 0
+    ) {
+      throw "Provided a list of sessions as your first argument";
     }
     this.terms = [];
     this.head = [{ terms: 0, session: "", className: "", excluded: -3 }];
     this.subjects = [];
     this.result = false;
+    console.log(
+      this.typeSession,
+      "ll",
+      this.typeSession[0]._id,
+      this.head[0].session
+    );
     this.format();
-    if (arguments.length === 0) {
+
+    if (arguments.length === 1) {
       return;
     } else {
-      if (this.typeSession.length === 0) {
-        throw "Session has to be created before result posting";
-      }
       if (typeof terms !== "number") {
         throw "Invalid Term type in constructor";
       }
@@ -83,7 +93,7 @@ class ResultMaker {
   sessionTermCheck = () =>
     this.typeSession.some(
       (elem) =>
-        elem._id === this.head[0].session && elem.term >= this.head[0].terms
+        elem._id == this.head[0].session && elem.term >= this.head[0].terms
     );
   /* Format
         Concats head, result and term
@@ -97,7 +107,12 @@ class ResultMaker {
     this.result = this.head.concat(this.terms).concat(this.subjects);
     if (!this.check()) {
       throw "Result size inconsistent with inner variables";
-    } else if (!this.sessionTermCheck()) {
+    } else if (
+      !this.sessionTermCheck() &&
+      this.result.length > 1 &&
+      this.result[0].session !== ""
+    ) {
+      //Checks for component create
       throw "The type of Session provided is invalid or the term is bad";
     }
     return this.result;
@@ -148,7 +163,7 @@ class ResultMaker {
     }
   };
   /* Add Subject
-        Adds a subject to a specific term if the sibject doesn't exist
+        Adds a subject to a specific term if the subject doesn't exist
         Updates if the subject initially exists
         The subject is also filtered to ensure integirity
         RETURNS this.result
@@ -558,6 +573,4 @@ class ResultMaker {
   check = () =>
     this.head[0].terms + this.subjects.length + this.head.length ===
     (this.result !== false ? this.result.length : [""].length);
-}
-
-module.exports = ResultMaker;
+};

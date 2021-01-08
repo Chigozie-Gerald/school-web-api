@@ -1,11 +1,11 @@
 const mongoose = require("mongoose");
+const { studentType } = require("../controllers/types");
 const Schema = mongoose.Schema;
-const ObjectId = mongoose.Schema.Types.ObjectId;
 
 //Each document indicates a student
 //`unique: true` needs useCreateIndex in connect to be set to true
 const resultSchema = new Schema({
-  studentId: { type: ObjectId, ref: "Student", required: true, unique: true },
+  studentId: studentType,
   result: [{ type: Array, required: true }],
   createdAt: { type: String, default: Date.now },
 });

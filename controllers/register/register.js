@@ -12,11 +12,26 @@ const { default: validator } = require("validator");
 exports.getStudent = function (req, res) {
   Student.find({})
     .sort({ firstname: 1 })
+    .select("-password")
     .then((student) => {
       if (student.length > 0) {
         res.send(student);
       } else {
         res.status(400).send({ student: "No Student Registered Yet" });
+      }
+    })
+    .catch((err) => console.log(err));
+};
+
+exports.getStaff = function (req, res) {
+  Staff.find({})
+    .sort({ firstname: 1 })
+    .select("-password")
+    .then((staff) => {
+      if (staff.length > 0) {
+        res.send(staff);
+      } else {
+        res.status(400).send({ msg: "No Staff Registered Yet" });
       }
     })
     .catch((err) => console.log(err));
@@ -31,16 +46,22 @@ exports.postRegister = (req, res) => {
     className,
     arm,
     password,
+    image,
+    guardianFirstname,
+    guardianLastname,
+    guardianAddress,
+    guardianEmail,
+    guardianPhoneNumber,
+    middlename,
+    address,
+    sex,
+    nationality,
+    stateOfOrigin,
+    lga,
+    religion,
   } = req.body;
 
-  if (
-    !lastname ||
-    !firstname ||
-    !regNumber ||
-    !className ||
-    !arm ||
-    !password
-  ) {
+  if (!lastname || !firstname || !regNumber || !password) {
     res.status(400).send({
       msg: "Incomplete credentials",
     });
@@ -49,14 +70,27 @@ exports.postRegister = (req, res) => {
       if (stud) {
         res.status(400).send({ msg: "Student already exists" });
       } else if (!stud) {
-        student = new Student({
+        const student = new Student({
           lastname,
           dob,
           firstname,
           regNumber,
           className,
           arm,
+          image,
           password,
+          guardianFirstname,
+          guardianLastname,
+          guardianAddress,
+          guardianEmail,
+          guardianPhoneNumber,
+          middlename,
+          address,
+          sex,
+          nationality,
+          stateOfOrigin,
+          lga,
+          religion,
         });
         bcrypt.genSalt(10, (err, salt) => {
           if (err) {
@@ -73,13 +107,13 @@ exports.postRegister = (req, res) => {
                 student.save((err, newStudent) => {
                   if (err) {
                     res.status(500).send({
-                      msg: "An error occured, please try again!",
+                      msg: "An error occured, please try again!\n" + err,
                     });
                   } else {
                     jwt.sign(
-                      { user: newStudent._id },
+                      { user: newStudent._id, type: "student" },
                       config.jwtSecret,
-                      { expiresIn: "2h" },
+                      { expiresIn: "2d" },
                       (err, token) => {
                         if (err) {
                           res.status(403).json({
@@ -377,11 +411,19 @@ exports.registerStaff = (req, res) => {
     editor,
     sex,
     lga,
+    staffId,
     teacher,
+    admin,
     address,
     middlename,
+    image,
     qualifications,
     phoneNumber,
+    nokFirstname,
+    nokLastname,
+    nokAddress,
+    nokEmail,
+    nokPhoneNumber,
     email,
     formteacher,
     subject,
@@ -391,10 +433,17 @@ exports.registerStaff = (req, res) => {
     dob,
     stateOfOrigin,
     religion,
+    dateEmployed,
     password,
   } = req.body;
 
-  if (!email || !validator.isEmail(email) || !firstname || !lastname) {
+  if (
+    !validator.isEmail(email) ||
+    !staffId ||
+    !password ||
+    !firstname ||
+    !lastname
+  ) {
     res.status(400).send({
       msg: "Incomplete Info",
     });
@@ -411,18 +460,26 @@ exports.registerStaff = (req, res) => {
             )
             .catch((err) => res.status(500).send({ err }));
         } else {
-          const newStaff = new Staff({
+          const staff = new Staff({
             firstname,
             lastname,
             role,
+            image,
             editor,
             sex,
             lga,
+            staffId,
             teacher,
+            admin,
             address,
             middlename,
             qualifications,
             phoneNumber,
+            nokFirstname,
+            nokLastname,
+            nokAddress,
+            nokEmail,
+            nokPhoneNumber,
             email,
             formteacher,
             subject,
@@ -432,24 +489,40 @@ exports.registerStaff = (req, res) => {
             dob,
             stateOfOrigin,
             religion,
+            dateEmployed,
             password,
           });
-          newStaff.password = bcrypt.hashSync(newStaff.password);
-          newStaff.save((err, saved) => {
+          staff.password = bcrypt.hashSync(staff.password);
+
+          staff.save((err, saved) => {
             if (err) {
-              console.log(firstname);
               res.status(500).send({
                 msg: "Something went wrong",
                 err,
               });
             } else {
-              res.send({
-                saved,
-              });
+              jwt.sign(
+                { user: saved._id, type: "staff" },
+                config.jwtSecret,
+                { expiresIn: "2d" },
+                (err, token) => {
+                  if (err) {
+                    res.status(403).json({
+                      msg: "Error Generating Token",
+                    });
+                  } else {
+                    saved["password"] = null;
+                    res.send({
+                      token,
+                      user: saved,
+                    });
+                  }
+                }
+              );
             }
           });
         }
       })
-      .catch((err) => res.send(err + "hh"));
+      .catch((err) => res.status(500).send(err + "hh"));
   }
 };

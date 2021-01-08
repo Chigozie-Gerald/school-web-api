@@ -7,7 +7,6 @@ const config = require("../../config/key");
 const Staff = require("../../models/staff");
 
 exports.postLogin = function (req, res) {
-  console.log("here");
   const { regNumber, password } = req.body;
   if (!regNumber) {
     res.status(400).send({
@@ -33,9 +32,9 @@ exports.postLogin = function (req, res) {
               throw err;
             } else if (isMatch) {
               jwt.sign(
-                { user: stud._id },
+                { user: stud._id, type: "student" },
                 config.jwtSecret,
-                { expiresIn: "2h" },
+                { expiresIn: "2d" },
                 (err, token) => {
                   if (err) {
                     res.status(403).send({
@@ -66,7 +65,6 @@ exports.postLogin = function (req, res) {
   }
 };
 exports.staffPostLogin = function (req, res) {
-  console.log("here");
   const { staffId, password } = req.body;
   if (!staffId) {
     res.status(400).send({
@@ -92,7 +90,7 @@ exports.staffPostLogin = function (req, res) {
               throw err;
             } else if (isMatch) {
               jwt.sign(
-                { user: staff._id },
+                { user: staff._id, type: "staff" },
                 config.jwtSecret,
                 { expiresIn: "2d" },
                 (err, token) => {
@@ -133,6 +131,7 @@ exports.showStudent = function (req, res) {
         msg: "Student doesn't exist",
       });
     } else if (student) {
+      student["password"] = null;
       res.send(student);
     }
   });
@@ -145,7 +144,20 @@ exports.showStaff = function (req, res) {
         msg: "Staff doesn't exist",
       });
     } else if (staff) {
+      staff["password"] = null;
       res.send(staff);
     }
   });
+};
+
+exports.deleteStudent = (req, res) => {
+  Student.deleteMany()
+    .then((n) => res.send("All Deleted"))
+    .catch((er) => res.status(500).send("Something went wrong"));
+};
+
+exports.deleteStaff = (req, res) => {
+  Staff.deleteMany()
+    .then((n) => res.send("All Deleted"))
+    .catch((er) => res.status(500).send("Something went wrong"));
 };

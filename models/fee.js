@@ -11,7 +11,7 @@ const {
 } = require("../controllers/types/.");
 
 //Add category (commercial, science, art)
-feeSchema = new Schema(
+const feeSchema = new Schema(
   {
     name: { type: String, required: true },
     isCategorized: { type: Boolean, default: false },

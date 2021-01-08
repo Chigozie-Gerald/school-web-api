@@ -14,12 +14,13 @@ const typeSessionSchema = new Schema({
 });
 const typeSubjectSchema = new Schema({
   title: { type: String, unique: true, required: true },
-  senior: { type: Boolean, unique: true, default: false },
+  senior: { type: Boolean, default: false },
+  all: { type: Boolean, default: false },
   lastSession: typeSessionSchema,
 });
 const typeCategorySchema = new Schema({
   title: { type: String, unique: true, required: true },
-  senior: { type: Boolean, unique: true, default: true },
+  senior: { type: Boolean, default: true },
   lastSession: typeSessionSchema,
 });
 const typeArmSchema = new Schema({
@@ -64,33 +65,27 @@ const typesSchema = new Schema(
 );
 
 typesSchema.pre("validate", function (next) {
-  next();
-});
-typeSessionSchema.pre("validate", function (next) {
-  const iTypeSession = new Finder("session");
-  iTypeSession
-    .find()
-    .then((sess) => {
-      if (sess.length > 0) {
-        let latest = { item: null, time: 0 };
-        for (let a = 0; a < sess.length; a++) {
-          const element = sess[a];
-          sess[a].active = false;
-          if (element.createdAt > latest.time && element.refed) {
-            latest = { item: a, time: element.createdAt };
-          }
+  if (this.isModified("session")) {
+    const sess = this.session;
+    if (sess.length > 0) {
+      let latest = { item: null, time: 0 };
+      for (let a = 0; a < sess.length; a++) {
+        const element = sess[a];
+        this.session[a].active = false;
+        if (element.createdAt > latest.time) {
+          latest = { item: a, time: element.createdAt };
         }
-        //Unsure if session here is part of the documents
-        sess[latest.item ? latest.item : sess.length - 1].active = true;
-        next();
-      } else {
-        this.active = true;
-        next();
+        if (a === sess.length - 1) {
+          this.session[latest.item].active = true;
+        }
       }
-    })
-    .catch((err) => {
-      next(err);
-    });
+      next();
+    } else {
+      this.active = true;
+      next();
+    }
+  }
+  next();
 });
 class Finder {
   constructor(typeSect) {
@@ -104,7 +99,7 @@ class Finder {
     new Promise((resolve, reject) => {
       //value is an object
       if (!Object.prototype.isPrototypeOf(value)) {
-        reject(new Error("Invalid find arg"));
+        reject("Invalid findOne Argument");
       } else {
         this.iType
           .findOne()
@@ -116,9 +111,8 @@ class Finder {
                   let newElem = null;
                   for (let a = 0; a < type[this.typeSect].length; a++) {
                     const elem = type[this.typeSect][a];
-
                     const checker = keyArray.some((key) => {
-                      return elem[key] !== value[key];
+                      return elem[key] != value[key];
                     });
                     if (!checker && !newElem) {
                       newElem = elem;
@@ -136,7 +130,9 @@ class Finder {
               resolve(null);
             }
           })
-          .catch((err) => reject(err));
+          .catch((err) =>
+            reject("Something went wrong on findOne Finder Class")
+          );
       }
     });
 

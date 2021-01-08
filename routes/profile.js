@@ -13,20 +13,23 @@ const { admin, editor } = require("../middleware/admin");
 
 //Routes
 //Login & Register
+router.get("/login/:student_id", auth, login.showStudent);
+router.get("/login/:staff_id", auth, login.showStaff);
+router.post("/login", login.postLogin);
+router.post("/staff_login", login.staffPostLogin);
+router.get("/deleteStudent", login.deleteStudent);
+router.get("/deleteStaff", login.deleteStaff);
 router.post("/little", register.little);
 router.get("/student", register.getStudent);
-router.get("/login/:student_id", auth, login.showStudent);
+router.get("/staff", register.getStaff);
 router.post("/register", register.postRegister);
 router.post("/edit_profile", register.editProfile);
-router.post("/login", login.postLogin);
 router.post("/forgotten_password", register.forgotten_password);
 router.post("/change_password/:token", register.changePassword);
 router.post("/registerSchool", register.registerSchool);
 router.post("/registerStaff", register.registerStaff);
 //Result
 //add middleware later
-router.post("/result", result.postResult);
-router.post("/check_result", result.postGetResult);
 //admin
 router.post("/get_all_new_result", admin, result.getAllNewResult);
 router.post("/get_new_result", result.getNewResult);
